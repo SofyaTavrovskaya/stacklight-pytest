@@ -30,7 +30,6 @@ class MKConfig(object):
         file_like_io = StringIO(''.join(inv).decode("utf-8"))
         inventory = yaml.load(file_like_io)
         LOG.info("Try to load nodes for domain {}".format(cluster_name))
-        LOG.info("Inventory {}".format(''.join(inv)))
         self.nodes = {k: v for k, v in inventory["nodes"].items()
                       if cluster_name in k}
         LOG.info("Load nodes: {}".format(self.nodes.keys()))
