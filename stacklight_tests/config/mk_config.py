@@ -6,7 +6,7 @@ from pprint import pprint
 
 from stacklight_tests import settings
 from stacklight_tests import utils
-
+from io import StringIO
 
 class LOG(object):
     @staticmethod
@@ -25,11 +25,10 @@ class MKConfig(object):
             cluster_name = socket.getfqdn().split('.', 1)[-1]
             LOG.info("No domain/cluster_name passed, use generated: {}"
                      .format(cluster_name))
-
-        inventory = subprocess.Popen("reclass --inventory",
-                                     shell=True,
-                                     stdout=subprocess.PIPE).stdout.read()
-        inventory = yaml.load(inventory)
+        salt = utils.init_salt_client()
+        inv = salt.cmd('salt:master', 'cmd.run', ['reclass --inventory'], expr_form='pillar').values()
+        file_like_io = StringIO(''.join(inv).decode("utf-8"))
+        inventory = yaml.load(file_like_io)
         LOG.info("Try to load nodes for domain {}".format(cluster_name))
         self.nodes = {k: v for k, v in inventory["nodes"].items()
                       if cluster_name in k}
@@ -47,7 +46,6 @@ class MKConfig(object):
 
     def generate_nodes_config(self):
         nodes_config = []
-        private_key = open("/root/.ssh/id_rsa").read()
 
         def parse_roles_from_classes(node):
             roles_mapping = {
@@ -82,8 +80,6 @@ class MKConfig(object):
             nodes_config.append({
                 "address": node_params['_param']['single_address'],
                 "hostname": node_params['linux']['network']['fqdn'],
-                "username": "root",
-                "private_key": private_key,
                 "roles": roles,
             })
 
@@ -158,8 +154,7 @@ class MKConfig(object):
     def generate_prometheus_config(self):
         def get_port(input_line):
             return input_line["ports"][0].split(":")[0]
-
-        _param = self.get_application_node("prometheus_server")['parameters']
+        _param = self.get_application_node("rundeck")['parameters']
         expose_params = (
             _param["docker"]["client"]["stack"]["monitoring"]["service"])
 
