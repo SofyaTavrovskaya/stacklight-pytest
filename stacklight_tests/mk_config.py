@@ -58,6 +58,14 @@ class MKConfig(object):
                 "grafana.client": "grafana_client",
                 "kibana.server": "elasticsearch_server",
                 "prometheus.server": "prometheus_server",
+                "zookeeper": "zookeeper",
+                #"openstack.compute": "compute-dashboard",
+                #"openstack.compute": "openstack-availability",
+                #"openstack.control": "openstack-fci",
+                #"openstack.control": "csm-dashboard",
+                #"openstack.compute": "cloud-usage",
+                "prometheus_alertmanager": "alertmanager",
+                "pushgateway.container": "pushgateway",
             }
             cls_based_roles = [
                 role for role_name, role in roles_mapping.items()

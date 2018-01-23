@@ -64,6 +64,17 @@ def get_all_grafana_dashboards_names():
         "System": "linux",
         "Remote storage adapter": "influxdb",
         "Grafana": "grafana",
+        "Compute Dashboard": "compute-dashboard",
+        "Alertmanager": "alertmanager",
+        "Zookeeper": "zookeeper",
+        "Openstack Availability": "openstack-availability",
+        "main_prometheus": "main_prometheus",
+        "Cloud Usage": "cloud-usage",
+        "Openstack FCI": "openstack-fci",
+        "Pushgateway": "pushgateway",
+        "Jenkins": "jenkins",
+        "Main": "main",
+        "CSM Dashboard": "csm-dashboard",
     }
 
     return {idfy_name(k): v for k, v in dashboards.items()}
@@ -129,7 +140,6 @@ class Panel(object):
                 ids=get_all_grafana_dashboards_names().keys())
 def dashboard_name(request, cluster):
     dash_name, requirement = request.param
-
     if not any([requirement in node.roles for node in cluster]):
         pytest.skip("No required class {} for dashboard: {}".format(
             requirement, dash_name))

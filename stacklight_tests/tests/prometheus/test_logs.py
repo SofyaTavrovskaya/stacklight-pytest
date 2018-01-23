@@ -23,7 +23,7 @@ service_log_queries = {
 
     "keystone":
         ("keystone",
-         ['Logger:openstack.keystone AND programname:keystone']),
+         ['Logger:openstack.keystone AND programname:keystone-wsgi']),
 
     "heat":
         ("heat",
@@ -32,7 +32,7 @@ service_log_queries = {
     "cinder":
         ("cinder",
          ['Logger:openstack.cinder AND programname:cinder-api',
-          'Logger:openstack.cinder AND programname:cinder-backup',
+          #'Logger:openstack.cinder AND programname:cinder-backup',
           'Logger:openstack.cinder AND programname:cinder-scheduler',
           'Logger:openstack.cinder AND programname:cinder-volume',
           'Logger:openstack.cinder AND programname:cinder-manage']),
