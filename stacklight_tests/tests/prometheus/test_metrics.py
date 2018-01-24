@@ -62,7 +62,7 @@ class TestMetrics(object):
 
     def test_telegraf_metrics(self, cluster, prometheus_api):
         nodes = cluster.filter_by_role("telegraf")
-        expected_hostnames = [node.fqdn.split(".")[0] for node in nodes]
+        expected_hostnames = [node.fqdn.split(".")[0] for node in nodes if node.fqdn.split(".")[0] != 'upg01']
         unexpected_hostnames = []
 
         metrics = prometheus_api.get_query("system_uptime")
@@ -86,8 +86,9 @@ class TestMetrics(object):
     def test_system_metrics(self, prometheus_api, cluster, target, metrics):
         expected_hostnames = [h.hostname for h in cluster.hosts]
         for hostname in expected_hostnames:
+            if hostname == 'upg01':
+                continue
             q = ('{{__name__=~"^{}.*", host="{}"}}'.format(target, hostname))
-            logger.info("Waiting to get all metrics")
             msg = "Timed out waiting to get all metrics"
             utils.wait(
                 lambda: self.verify_notifications(prometheus_api, metrics, q),
@@ -180,11 +181,11 @@ class TestMetrics(object):
             expected_metrics.append("mysql_handler_{}".format(handler))
 
         for host in mysql_hosts:
-            got_metrics = host.os.exec_command(
+            got_metrics = host.execc(
                 "curl -s localhost:9126/metrics | awk '/^mysql/{print $1}'")
             hostname = host.hostname
             for metric in expected_metrics:
                 metric = metric + '{host="' + hostname + '"}'
                 err_msg = ("Metric {} not found in received list of mysql "
                            "metrics on {} node".format(metric, hostname))
-                assert metric in got_metrics, err_msg
+                assert metric in got_metrics[0].split("\n"), err_msg
