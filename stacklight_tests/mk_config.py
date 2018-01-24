@@ -4,6 +4,7 @@ import socket
 import yaml
 from pprint import pprint
 
+import os
 import settings
 import utils
 from io import StringIO
@@ -30,7 +31,11 @@ class MKConfig(object):
         file_like_io = StringIO(''.join(inv).decode("utf-8"))
         inventory = yaml.load(file_like_io)
         LOG.info("Try to load nodes for domain {}".format(cluster_name))
-        self.nodes = {k: v for k, v in inventory["nodes"].items()}
+        if "skipped_nodes" in os.environ:
+            skipped_nodes=os.environ['skipped_nodes'].split(',')
+            self.nodes = {k: v for k, v in inventory["nodes"].items() if k not in skipped_nodes}
+        else:
+            self.nodes = {k: v for k, v in inventory["nodes"].items()}
         LOG.info("Load nodes: {}".format(self.nodes.keys()))
 
     def get_application_node(self, application):

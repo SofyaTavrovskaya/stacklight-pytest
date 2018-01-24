@@ -34,8 +34,8 @@ service_log_queries = {
          ['Logger:openstack.cinder AND programname:cinder-api',
           #'Logger:openstack.cinder AND programname:cinder-backup',
           'Logger:openstack.cinder AND programname:cinder-scheduler',
-          'Logger:openstack.cinder AND programname:cinder-volume',
-          'Logger:openstack.cinder AND programname:cinder-manage']),
+          'Logger:openstack.cinder AND programname:cinder-volume']),
+          #'Logger:openstack.cinder AND programname:cinder-manage']),
 
     "nova":
         ("nova",

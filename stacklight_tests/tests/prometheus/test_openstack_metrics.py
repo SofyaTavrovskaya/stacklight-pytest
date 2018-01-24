@@ -34,8 +34,8 @@ class TestOpenstackMetrics(object):
         wait_for_resource_status(client.images, image.id, "active")
         destructive.append(lambda: client.images.delete(image.id))
 
-        images_count = len([im for im in client.images.list()])
-        images_size = sum([im["size"] for im in client.images.list()])
+        images_count = len([im for im in client.images.list(filters={"visibility": "public"})])
+        images_size = sum([im["size"] for im in client.images.list(filters={"visibility": "public"})])
 
         count_query = ('{__name__="openstack_glance_images",'
                        'visibility="public",status="active"}')
@@ -119,7 +119,7 @@ class TestOpenstackMetrics(object):
 
     def test_cinder_metrics(self, destructive, prometheus_api, os_clients):
         volume_name = utils.rand_name("volume-")
-        expected_volume_status = settings.VOLUME_STATUS
+        expected_volume_status = "available"
         client = os_clients.volume
         volume = client.volumes.create(size=1, name=volume_name)
         wait_for_resource_status(client.volumes, volume.id,
