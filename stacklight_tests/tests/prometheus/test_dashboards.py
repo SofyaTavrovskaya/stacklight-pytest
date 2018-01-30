@@ -176,12 +176,9 @@ def test_grafana_dashboard_panel_queries(
         dashboard_results[panel.status].append(panel)
 
     error_msg = (
-        "\nPassed panels:\n  {passed}"
         "\nIgnored panels:\n  {ignored}"
         "\nFailed panels:\n  {failed}"
         "\nPartially failed panels:\n  {partially_failed}").format(
-            passed="\n  ".join(
-                map(str, dashboard_results[PanelStatus.ok])),
             ignored="\n  ".join(
                 map(str, dashboard_results[PanelStatus.ignored])),
             failed="\n  ".join(
@@ -190,7 +187,7 @@ def test_grafana_dashboard_panel_queries(
                 map(str, dashboard_results[PanelStatus.partial_fail])),
         )
 
-    assert (len(dashboard_results[PanelStatus.fail]) == 0 or
+    assert (len(dashboard_results[PanelStatus.fail]) == 0 and
             len(dashboard_results[PanelStatus.partial_fail]) == 0), error_msg
 
 
