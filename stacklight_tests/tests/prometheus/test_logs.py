@@ -15,15 +15,23 @@ service_log_queries = {
           'Logger:openstack.neutron AND programname:l3-agent',
           'Logger:openstack.neutron AND programname:metadata-agent']),
 
+    "neutron":
+        ("neutron",
+         ['Logger:openstack.neutron AND programname:server']),
+
     "glance":
         ("glance",
          ['Logger:openstack.glance AND programname:api',
-          'Logger:glusterfs AND programname:glusterd',
           'Logger:openstack.glance AND programname:registry']),
+
+    "glusterfs":
+        ("glusterfs",
+         [ 'Logger:glusterfs AND programname:glusterd']),
 
     "keystone":
         ("keystone",
-         ['Logger:openstack.keystone AND programname:keystone-wsgi']),
+         ['Logger:openstack.keystone AND programname:keystone-wsgi',
+          'Logger:openstack.keystone AND programname:keystone-wsgi-admin']),
 
     "heat":
         ("heat",
@@ -32,15 +40,17 @@ service_log_queries = {
     "cinder":
         ("cinder",
          ['Logger:openstack.cinder AND programname:cinder-api',
-          #'Logger:openstack.cinder AND programname:cinder-backup',
           'Logger:openstack.cinder AND programname:cinder-scheduler',
-          'Logger:openstack.cinder AND programname:cinder-volume']),
-          #'Logger:openstack.cinder AND programname:cinder-manage']),
+          'Logger:openstack.cinder AND programname:cinder-volume',
+          'Logger:openstack.cinder AND programname:cinder-manage']),
 
     "nova":
         ("nova",
          ['Logger:openstack.nova AND programname:nova-api',
           'Logger:openstack.nova AND programname:nova-compute',
+          'Logger:openstack.nova AND programname:nova-consoleauth',
+          'Logger:openstack.nova AND programname:nova-cert',
+          'Logger:openstack.nova AND programname:nova-novncproxy',
           'Logger:openstack.nova AND programname:nova-scheduler']),
 
     "rabbitmq":
@@ -55,6 +65,8 @@ service_log_queries = {
         ("linux",
          ['Logger:system.auth',
           'Logger:system.kern',
+          'Logger:system.haproxy',
+          'Logger:system.mail',
           'Logger:system.syslog']),
 
     "zookeeper":
@@ -69,6 +81,8 @@ service_log_queries = {
     "contrail":
         ("opencontrail",
          ['Logger:contrail.alarm*',
+          'Logger:contrail.api',
+          'Logger:contrail.svc-monitor',
           'Logger:contrail.discovery*'])
 }
 
