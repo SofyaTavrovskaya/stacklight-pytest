@@ -39,8 +39,8 @@ class TestMetrics(object):
                                for metric in output])
             delta = set(expected_list) - got_metrics
             if delta:
-                logger.info("{} metric(s) not found in {}".format(
-                    delta, got_metrics))
+                logger.info("{} metric(s) not found in {}. Query: {}".format(
+                    delta, got_metrics, query))
                 return False
             return True
 
@@ -92,7 +92,7 @@ class TestMetrics(object):
             msg = "Timed out waiting to get all metrics"
             utils.wait(
                 lambda: self.verify_notifications(prometheus_api, metrics, q),
-                timeout=5 * 60, interval=10, timeout_msg=msg)
+                timeout=1 * 60, interval=10, timeout_msg=msg)
 
     def test_k8s_metrics(self, cluster, prometheus_api):
         nodes = cluster.filter_by_role("kubernetes")
