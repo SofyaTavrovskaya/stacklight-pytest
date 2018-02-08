@@ -105,6 +105,10 @@ def topo_sort(graph_unsorted):
 
 
 def load_config():
+    test_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(test_dir, "mk_config.py")
+    if "SL_AUTOCONF" in os.environ.keys():
+        os.system('python {}'.format(path))
     with open(get_fixture("config.yaml")) as config_file:
         config = yaml.load(config_file)
     return config
