@@ -22,8 +22,8 @@ class ElasticSearchApi(object):
         return self.es.search(
             index=indices,
             body={
-                "query": {"filtered": {
-                    "query": {"bool": {"should": {"query_string": {
+                "query": { "bool": {
+                    "must": { "bool": {"should": {"query_string": {
                         "query": query_filter}}}},
                     "filter": {"bool": {"must": {"range": {
                         "Timestamp": {"from": time_range}}}}}}},
