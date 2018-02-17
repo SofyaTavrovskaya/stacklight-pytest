@@ -61,11 +61,13 @@ class TestOpenstackMetrics(object):
         users = client.users.list()
 
         metric_dict = {
-            '{__name__="openstack_keystone_tenants_total"}':
-                [len(tenants), "Incorrect tenant count in metric {}"],
-            'openstack_keystone_tenants{state="enabled"}':
-                [len(filter(lambda x: x.enabled, tenants)),
-                 "Incorrect enabled tenant count in metric {}"],
+            # Temporary skipped
+            # See https://mirantis.jira.com/browse/PROD-17920
+            #'{__name__="openstack_keystone_tenants_total"}':
+            #    [len(tenants), "Incorrect tenant count in metric {}"],
+            #'openstack_keystone_tenants{state="enabled"}':
+            #    [len(filter(lambda x: x.enabled, tenants)),
+            #     "Incorrect enabled tenant count in metric {}"],
             'openstack_keystone_tenants{state="disabled"}':
                 [len(filter(lambda x: not x.enabled, tenants)),
                  "Incorrect disabled tenant count in metric {}"],
@@ -126,8 +128,8 @@ class TestOpenstackMetrics(object):
                                  expected_volume_status)
         destructive.append(lambda: client.volume.delete(volume))
 
-        volumes_count = len([vol for vol in client.volumes.list()])
-        volumes_size = sum([vol.size for vol in client.volumes.list()]) * 10**9
+        volumes_count = len([vol for vol in client.volumes.list(search_opts={'status': expected_volume_status})])
+        volumes_size = sum([vol.size for vol in client.volumes.list(search_opts={'status': expected_volume_status})]) * 10**9
 
         count_query = ('{{__name__="openstack_cinder_volumes",'
                        'status="{0}"}}'.format(expected_volume_status))
