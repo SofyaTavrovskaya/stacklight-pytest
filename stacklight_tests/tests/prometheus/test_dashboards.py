@@ -11,6 +11,25 @@ ignored_queries_for_fail = [
     '{state="disabled", service="cinder-volume"})',
     'max(openstack_cinder_services{state="up", service="cinder-volume"})',
 
+    # https://mirantis.jira.com/browse/PROD-17651
+    'cassandra_db_StorageService_Load{host=~"$host"}',
+    'cassandra_db_StorageService_ExceptionCount{host=~"$host"}',
+
+    # there are no aggregates by default
+    # https://mirantis.jira.com/browse/PROD-17650
+    'max(openstack_nova_aggregate_free_ram) by (aggregate)',
+    'max(openstack_nova_aggregate_free_vcpus) by (aggregate)',
+    'max(openstack_nova_aggregate_used_disk) by (aggregate)',
+    'max(openstack_nova_aggregate_used_vcpus) by (aggregate)',
+    'max(openstack_nova_aggregate_free_disk) by (aggregate)',
+    'max(openstack_nova_aggregate_used_ram) by (aggregate)',
+
+    # https://mirantis.jira.com/browse/PROD-17523
+    'avg(jenkins_job_building_duration_sum/jenkins_job_building_duration_count)',
+
+    # Temporarily skipped
+    'prometheus_local_storage_target_heap_size_bytes{instance=~"$Prometheus:[1-99][0-9]*"}',
+
     # By default metric is not present if no tracked value
     'irate(openstack_heat_http_response_times_count{http_status="5xx"}[5m])',
 ]
@@ -149,6 +168,9 @@ def dashboard_name(request, cluster):
 
 def test_grafana_dashboard_panel_queries(
         dashboard_name, grafana_client, prometheus_api):
+
+    if dashboard_name == 'influxdb-relay':
+        pytest.skip("influxdb-relay dashboard is temporarily skipped")
 
     grafana_client.check_grafana_online()
     dashboard = grafana_client.get_dashboard(dashboard_name)
