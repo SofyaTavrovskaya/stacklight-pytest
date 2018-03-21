@@ -186,7 +186,7 @@ class TestMetrics(object):
                 "curl -s localhost:9126/metrics | awk '/^mysql/{print $1}'")
             hostname = host.hostname
             for metric in expected_metrics:
-                metric = metric + '{host="' + hostname + '"}'
+                metric = metric + '{host="' + hostname + '",server="/var/run/mysqld/mysqld.sock"}'
                 err_msg = ("Metric {} not found in received list of mysql "
                            "metrics on {} node".format(metric, hostname))
                 assert metric in got_metrics[0].split("\n"), err_msg
