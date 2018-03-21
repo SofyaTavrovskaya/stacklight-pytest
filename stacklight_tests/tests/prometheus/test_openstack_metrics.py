@@ -128,8 +128,8 @@ class TestOpenstackMetrics(object):
                                  expected_volume_status)
         destructive.append(lambda: client.volume.delete(volume))
 
-        volumes_count = len([vol for vol in client.volumes.list(search_opts={'status': expected_volume_status})])
-        volumes_size = sum([vol.size for vol in client.volumes.list(search_opts={'status': expected_volume_status})]) * 10**9
+        volumes_count = len([vol for vol in client.volumes.list(search_opts={'status': expected_volume_status, 'all_tenants': 1})])
+        volumes_size = sum([vol.size for vol in client.volumes.list(search_opts={'status': expected_volume_status, 'all_tenants': 1})]) * 10**9
 
         count_query = ('{{__name__="openstack_cinder_volumes",'
                        'status="{0}"}}'.format(expected_volume_status))
