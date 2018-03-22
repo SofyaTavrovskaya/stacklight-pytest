@@ -4,17 +4,6 @@ import pytest
 
 
 ignored_queries_for_fail = [
-    # Default installation does not contain cinder-volume
-    'max(openstack_cinder_services{state="down", service="cinder-volume"})',
-    'max(openstack_cinder_services{service="cinder-volume"}) by (state)',
-    'max(openstack_cinder_services'
-    '{state="disabled", service="cinder-volume"})',
-    'max(openstack_cinder_services{state="up", service="cinder-volume"})',
-
-    # https://mirantis.jira.com/browse/PROD-17651
-    'cassandra_db_StorageService_Load{host=~"$host"}',
-    'cassandra_db_StorageService_ExceptionCount{host=~"$host"}',
-
     # there are no aggregates by default
     # https://mirantis.jira.com/browse/PROD-17650
     'max(openstack_nova_aggregate_free_ram) by (aggregate)',
@@ -26,9 +15,6 @@ ignored_queries_for_fail = [
 
     # https://mirantis.jira.com/browse/PROD-17523
     'avg(jenkins_job_building_duration_sum/jenkins_job_building_duration_count)',
-
-    # Temporarily skipped
-    'prometheus_local_storage_target_heap_size_bytes{instance=~"$Prometheus:[1-99][0-9]*"}',
 
     # By default metric is not present if no tracked value
     'irate(openstack_heat_http_response_times_count{http_status="5xx"}[5m])',
@@ -99,8 +85,7 @@ def get_all_grafana_dashboards_names():
         "Nova": "nova",
         "Ntp": "linux",
         "Nginx": "nginx",
-        # Too many fails, skipped
-        #"OpenContrail": "opencontrail",
+        "OpenContrail": "opencontrail",
         "Prometheus Performances": "prometheus",
         "Prometheus Stats": "prometheus",
         "RabbitMQ": "rabbitmq",
@@ -195,6 +180,9 @@ def test_grafana_dashboard_panel_queries(
 
     if dashboard_name == 'influxdb-relay':
         pytest.skip("influxdb-relay dashboard is temporarily skipped")
+
+    if dashboard_name == 'opencontrail':
+        pytest.skip("opencontrail dashboard is temporarily skipped")
 
     grafana_client.check_grafana_online()
     dashboard = grafana_client.get_dashboard(dashboard_name)
