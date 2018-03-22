@@ -13,7 +13,8 @@ service_log_queries = {
         ("neutron.agent",
          ['Logger:openstack.neutron AND programname:dhcp-agent',
           'Logger:openstack.neutron AND programname:l3-agent',
-          'Logger:openstack.neutron AND programname:metadata-agent']),
+          'Logger:openstack.neutron AND programname:metadata-agent',
+          'Logger:openstack.neutron AND programname:neutron-server']),
 
     "neutron":
         ("neutron",
@@ -22,7 +23,9 @@ service_log_queries = {
     "glance":
         ("glance",
          ['Logger:openstack.glance AND programname:api',
-          'Logger:openstack.glance AND programname:registry']),
+          'Logger:openstack.glance AND programname:registry',
+          'Logger:openstack.glance AND programname:glance-api',
+          'Logger:openstack.glance AND programname:glance-registry']),
 
     "glusterfs":
         ("glusterfs",
@@ -35,14 +38,16 @@ service_log_queries = {
 
     "heat":
         ("heat",
-         ['Logger:openstack.heat AND programname:heat']),
+         ['Logger:openstack.heat AND programname:heat',
+          'Logger:openstack.heat AND programname:heat-api']),
 
     "cinder":
         ("cinder",
          ['Logger:openstack.cinder AND programname:cinder-api',
           'Logger:openstack.cinder AND programname:cinder-scheduler',
           'Logger:openstack.cinder AND programname:cinder-volume',
-          'Logger:openstack.cinder AND programname:cinder-manage']),
+          'Logger:openstack.cinder AND programname:cinder-manage',
+          'Logger:openstack.cinder AND programname:cinder-wsgi']),
 
     "nova":
         ("nova",

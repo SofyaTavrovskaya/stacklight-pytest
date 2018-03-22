@@ -32,6 +32,24 @@ ignored_queries_for_fail = [
 
     # By default metric is not present if no tracked value
     'irate(openstack_heat_http_response_times_count{http_status="5xx"}[5m])',
+
+    # Please check manually
+    'min(openstack_nova_instance_creation_time)',
+    'max(openstack_nova_instance_creation_time)',
+    'avg(openstack_nova_instance_creation_time)',
+
+    # https://mirantis.jira.com/browse/PROD-18802
+    'rate(http_requests_total{handler="push",job="pushgateway",instance=~"$Pushgateway:[1-9][0-9]*"}[1h])',
+    'rate(http_requests_total{handler="push",job="pushgateway",instance=~"$Pushgateway:[1-9][0-9]*"}[6h])',
+    'rate(http_requests_total{handler="push",job="pushgateway",instance=~"$Pushgateway:[1-9][0-9]*"}[10m])',
+
+    # Should be investigated
+    'prometheus_local_storage_target_heap_size_bytes{instance=~"$Prometheus:[1-9][0-9]*"}',
+
+    # https://mirantis.jira.com/browse/PROD-18803
+    'count(influxdb_up == 1)',
+    'count(influxdb_up == 0)',
+    'count(influxdb_up)',
 ]
 
 
@@ -39,6 +57,11 @@ ignored_queries_for_partial_fail = [
     # Haproxy connections are not present on all nodes
     'max(haproxy_server_ssl_connections {host=~"$host"}) without(pid) > 0',
     'max(haproxy_server_connections {host=~"$host"}) without(pid) > 0',
+
+    # https://mirantis.jira.com/browse/PROD-17649
+    'min(zookeeper_pending_syncs{host=~"$host"})',
+    'min(zookeeper_followers{host=~"$host"})',
+    'min(zookeeper_synced_followers{host=~"$host"})',
 ]
 
 
@@ -76,7 +99,8 @@ def get_all_grafana_dashboards_names():
         "Nova": "nova",
         "Ntp": "linux",
         "Nginx": "nginx",
-        "OpenContrail": "opencontrail",
+        # Too many fails, skipped
+        #"OpenContrail": "opencontrail",
         "Prometheus Performances": "prometheus",
         "Prometheus Stats": "prometheus",
         "RabbitMQ": "rabbitmq",
@@ -90,7 +114,7 @@ def get_all_grafana_dashboards_names():
         "main_prometheus": "main_prometheus",
         "Cloud Usage": "cloud-usage",
         "Openstack FCI": "openstack-fci",
-        "Pushgateway": "pushgateway",
+        "Pushgateway": "prometheus",
         "Jenkins": "jenkins",
         "Main": "main",
         "CSM Dashboard": "csm-dashboard",

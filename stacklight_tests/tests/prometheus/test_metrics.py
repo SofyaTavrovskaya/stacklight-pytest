@@ -77,9 +77,7 @@ class TestMetrics(object):
         assert expected_hostnames == []
 
     def test_prometheus_metrics(self, prometheus_api):
-        pytest.skip("This test is temporarily skipped")
-        metric = prometheus_api.get_query(
-            "prometheus_local_storage_series_ops_total")
+        metric = prometheus_api.get_query("prometheus_build_info")
         assert len(metric) != 0
 
     @pytest.mark.parametrize("target,metrics", target_metrics.items(),
