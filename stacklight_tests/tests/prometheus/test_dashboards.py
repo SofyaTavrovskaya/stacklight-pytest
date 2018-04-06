@@ -13,6 +13,10 @@ ignored_queries_for_fail = [
 
     # By default metric is not present if no tracked value
     'irate(openstack_heat_http_response_times_count{http_status="5xx"}[5m])',
+
+    # Partial Elasticsearch metric PROD-19161
+    'quantile_over_time(0.9, elasticsearch_indices_flush_total_latency'
+    '{host="$host"}[5m])',
 ]
 
 
@@ -20,6 +24,9 @@ ignored_queries_for_partial_fail = [
     # Haproxy connections are not present on all nodes
     'max(haproxy_server_ssl_connections {host=~"$host"}) without(pid) > 0',
     'max(haproxy_server_connections {host=~"$host"}) without(pid) > 0',
+
+    # Values coming only from two nodes PROD-19161
+    'max(elasticsearch_indices_search_fetch_latency{host="$host"}',
 ]
 
 
