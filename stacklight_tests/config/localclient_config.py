@@ -96,14 +96,13 @@ class MKConfig(object):
                 _param.get('grafana_influxdb_host') or
                 _param['stacklight_monitor_address'],
             "influxdb_port":
-                _param['influxdb_port'],
+                _param['influxdb_port'] or 8086,
             "influxdb_username":
-                _param.get('influxdb_user') or "root",
+                _param.get('prometheus_influxdb_username') or "lma",
             "influxdb_password":
-                _param.get('influxdb_password') or
-                _param["influxdb_admin_password"],
+                _param.get('prometheus_influxdb_password') or "lmapass",
             "influxdb_db_name":
-                _param.get('influxdb_database') or "lma",
+                _param.get('prometheus_influxdb_db') or "prometheus",
         }
 
     def generate_elasticsearch_config(self):
