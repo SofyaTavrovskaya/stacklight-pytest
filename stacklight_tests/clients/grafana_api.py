@@ -79,12 +79,6 @@ class GrafanaApi(object):
     def check_grafana_online(self):
         check_http_get_response(self.grafana_api_url.replace("/api", "/login"))
         check_http_get_response(self.get_api_url('/org'), auth=self.auth)
-        check_http_get_response(self.get_api_url('/org'),
-                                auth=('agent', 'rogue'), expected_codes=(401,))
-        check_http_get_response(self.get_api_url('/org'),
-                                auth=('admin', 'rogue'), expected_codes=(401,))
-        check_http_get_response(self.get_api_url('/org'),
-                                auth=('agent', 'admin'), expected_codes=(401,))
 
     def _get_raw_dashboard(self, name):
         dashboard_url = self.get_api_url("/dashboards/db/{}".format(name))
