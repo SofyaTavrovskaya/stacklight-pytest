@@ -32,8 +32,8 @@ class TestInfluxDbSmoke(object):
         Duration 1m
         """
         service = "influxdb"
-        check_service_installed(cluster, service)
-        check_service_running(cluster, service)
+        check_service_installed(cluster, service, "influxdb")
+        check_service_running(cluster, service, "influxdb")
         influxdb_client.check_influxdb_online()
 
     def test_influxdb_relay_installed(self, cluster):
@@ -46,5 +46,5 @@ class TestInfluxDbSmoke(object):
         Duration 1m
         """
         service = "influxdb-relay"
-        check_service_installed(cluster, service)
-        check_service_running(cluster, service)
+        check_service_installed(cluster, service, "influxdb")
+        check_service_running(cluster, service, "influxdb")
