@@ -1,4 +1,3 @@
-import salt.client as client
 import subprocess
 import socket
 
@@ -8,6 +7,11 @@ from pprint import pprint
 import settings
 import utils
 from io import StringIO
+
+try:
+    import salt.client as client
+except ImportError:
+    pass
 
 class LOG(object):
     @staticmethod

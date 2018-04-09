@@ -1,5 +1,7 @@
-import salt.client
-
+try:
+    import salt.client as client
+except ImportError:
+    pass
 
 class SaltApi(object):
     def __init__(self):
