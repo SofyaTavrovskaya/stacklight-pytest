@@ -1,4 +1,5 @@
 import logging
+import pytest
 
 from stacklight_tests import settings
 from stacklight_tests import utils
@@ -169,6 +170,7 @@ class TestOpenstackMetrics(object):
                 prometheus_api, q, get_servers_count(status.upper()),
                 err_msg.format(q))
 
+    @pytest.mark.skip(reason="Temporary disabling")
     def test_nova_services_metrics(self, prometheus_api, cluster):
         controllers = filter(lambda x: "controller" in x.roles, cluster.hosts)
         computes = filter(lambda x: "compute" in x.roles, cluster.hosts)

@@ -60,6 +60,7 @@ class TestMetrics(object):
         assert unexpected_hostnames == []
         assert expected_hostnames == []
 
+    @pytest.mark.skip(reason="Temporary disabling")
     def test_telegraf_metrics(self, cluster, prometheus_api):
         nodes = cluster.filter_by_role("telegraf")
         expected_hostnames = [node.fqdn.split(".")[0] for node in nodes]
@@ -80,6 +81,7 @@ class TestMetrics(object):
         metric = prometheus_api.get_query("prometheus_build_info")
         assert len(metric) != 0
 
+    @pytest.mark.skip(reason="Temporary disabling")
     @pytest.mark.parametrize("target,metrics", target_metrics.items(),
                              ids=target_metrics.keys())
     def test_system_metrics(self, prometheus_api, cluster, target, metrics):
