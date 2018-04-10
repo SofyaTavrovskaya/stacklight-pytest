@@ -187,8 +187,7 @@ def test_grafana_dashboard_panel_queries(
             failed="\n  ".join(
                 map(str, dashboard_results[PanelStatus.fail])),
             partially_failed="\n  ".join(
-                map(str, dashboard_results[PanelStatus.partial_fail])),
-        )
+                map(str, dashboard_results[PanelStatus.partial_fail])))
 
     assert (len(dashboard_results[PanelStatus.fail]) == 0 or
             len(dashboard_results[PanelStatus.partial_fail]) == 0), error_msg

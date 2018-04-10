@@ -1,5 +1,4 @@
 import logging
-import pytest
 
 from stacklight_tests import settings
 from stacklight_tests import utils
@@ -170,27 +169,29 @@ class TestOpenstackMetrics(object):
                 prometheus_api, q, get_servers_count(status.upper()),
                 err_msg.format(q))
 
-    @pytest.mark.skip(reason="Temporary disabling")
-    def test_nova_services_metrics(self, prometheus_api, cluster):
-        controllers = filter(lambda x: "controller" in x.roles, cluster.hosts)
-        computes = filter(lambda x: "compute" in x.roles, cluster.hosts)
-        controller_services = ["nova-cert", "nova-conductor",
-                               "nova-consoleauth", "nova-scheduler"]
+    def test_nova_services_metrics(self, prometheus_api, salt_actions):
+        controllers = salt_actions.ping(
+            "nova:controller:enabled:True", expr_form="pillar")
+        computes = salt_actions.ping(
+            "nova:compute:enabled:True", expr_form="pillar")
+        controller_services = ["nova-conductor", "nova-consoleauth",
+                               "nova-scheduler"]
         compute_services = ["nova-compute"]
         err_service_msg = "Service {} is down on the {} node"
         for controller in controllers:
             for service in controller_services:
                 q = 'hostname="{}",service="{}"'.format(
-                    controller.hostname, service)
+                    controller.split(".")[0], service)
                 self.check_openstack_metrics(
                     prometheus_api,
                     'openstack_nova_service{' + q + '}',
-                    0, err_service_msg.format(service, controller.hostname))
+                    0,
+                    err_service_msg.format(service, controller.split(".")[0]))
         for compute in computes:
             for service in compute_services:
                 q = 'hostname="{}",service="{}"'.format(
-                    compute.hostname, service)
+                    compute.split(".")[0], service)
                 self.check_openstack_metrics(
                     prometheus_api,
                     'openstack_nova_service{' + q + '}',
-                    0, err_service_msg.format(service, compute.hostname))
+                    0, err_service_msg.format(service, compute.split(".")[0]))

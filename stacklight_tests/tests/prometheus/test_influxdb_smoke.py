@@ -1,28 +1,25 @@
-import pytest
-
-
-def check_service_installed(cluster, name, role=None):
+def check_service_installed(salt_actions, name, tgt):
     """Checks that service is installed on nodes with provided role."""
-    if role is None:
-        role = "monitoring"
-    nodes = cluster.filter_by_role(role)
+    nodes = salt_actions.ping(tgt, expr_form="pillar")
     for node in nodes:
-        node.os.check_package_installed(name)
+        output = salt_actions.run_cmd(node, "dpkg-query -l {}".format(name))
+        err = "Package {} is not installed on the {} node"
+        assert "no packages found" not in output[0], err.format(
+            name, node)
 
 
-def check_service_running(cluster, name, role=None):
+def check_service_running(salt_actions, name, tgt):
     """Checks that service is running on nodes with provided role."""
-    if role is None:
-        role = "monitoring"
-    nodes = cluster.filter_by_role(role)
+    nodes = salt_actions.ping(tgt, expr_form="pillar")
     for node in nodes:
-        node.os.manage_service(name, "status")
+        err = "Service {} is stopped on the {} node"
+        assert salt_actions.service_status(node, name).values()[0], err.format(
+            name, node)
 
 
 class TestInfluxDbSmoke(object):
 
-    def test_influxdb_installed(self, cluster, influxdb_client,
-                                influxdb_config):
+    def test_influxdb_installed(self, salt_actions, influxdb_client):
         """Smoke test that checks basic features of InfluxDb.
 
         Scenario:
@@ -32,18 +29,20 @@ class TestInfluxDbSmoke(object):
 
         Duration 1m
         """
-        nodes = cluster.filter_by_role("prometheus_server")
         service = "influxdb"
-        check_service_installed(cluster, service, "influxdb")
-        check_service_running(cluster, service, "influxdb")
-        if "service.prometheus.relay" in [node.roles for node in nodes][0]:
+        target = "influxdb:server"
+        check_service_installed(salt_actions, service, target)
+        check_service_running(salt_actions, service, target)
+        if salt_actions.ping("I@prometheus:relay"):
+            node = salt_actions.ping(target, expr_form="pillar")[0]
+            password = salt_actions.get_pillar_item(
+                node, "_param:influxdb_admin_password")[0]
             influxdb_client.check_influxdb_online(
-                user="root",
-                password=influxdb_config["influxdb_admin_password"])
+                user="root", password=password)
         else:
             influxdb_client.check_influxdb_online()
 
-    def test_influxdb_relay_installed(self, cluster):
+    def test_influxdb_relay_installed(self, salt_actions):
         """Smoke test that checks basic features of InfluxDb.
 
         Scenario:
@@ -53,5 +52,6 @@ class TestInfluxDbSmoke(object):
         Duration 1m
         """
         service = "influxdb-relay"
-        check_service_installed(cluster, service, "influxdb")
-        check_service_running(cluster, service, "influxdb")
+        target = "influxdb:relay"
+        check_service_installed(salt_actions, service, target)
+        check_service_running(salt_actions, service, target)

@@ -44,48 +44,35 @@ class TestMetrics(object):
                 return False
             return True
 
-    def test_etcd_metrics(self, cluster, prometheus_api):
-        nodes = cluster.filter_by_role("etcd")
-        expected_hostnames = [node.address for node in nodes]
-        unexpected_hostnames = []
+    def test_etcd_metrics(self, salt_actions, prometheus_api):
+        nodes = salt_actions.ping("services:etcd", expr_form="grain")
+        expected_hostnames = [
+            salt_actions.get_pillar_item(node, "_param:single_address")[0]
+            for node in nodes]
 
         metrics = prometheus_api.get_query("etcd_server_has_leader")
+        hostnames = [metric["metric"]["instance"].split(":")[0]
+                     for metric in metrics]
+        assert set(expected_hostnames) == set(hostnames)
 
-        for metric in metrics:
-            hostname = metric["metric"]["instance"].split(":")[0]
-            try:
-                expected_hostnames.remove(hostname)
-            except ValueError:
-                unexpected_hostnames.append(hostname)
-        assert unexpected_hostnames == []
-        assert expected_hostnames == []
-
-    @pytest.mark.skip(reason="Temporary disabling")
-    def test_telegraf_metrics(self, cluster, prometheus_api):
-        nodes = cluster.filter_by_role("telegraf")
-        expected_hostnames = [node.fqdn.split(".")[0] for node in nodes]
-        unexpected_hostnames = []
+    def test_telegraf_metrics(self, prometheus_api, salt_actions):
+        nodes = salt_actions.ping()
+        expected_hostnames = [node.split(".")[0] for node in nodes]
 
         metrics = prometheus_api.get_query("system_uptime")
-
-        for metric in metrics:
-            hostname = metric["metric"]["host"]
-            try:
-                expected_hostnames.remove(hostname)
-            except ValueError:
-                unexpected_hostnames.append(hostname)
-        assert unexpected_hostnames == []
-        assert expected_hostnames == []
+        hostnames = [metric["metric"]["host"] for metric in metrics]
+        assert set(expected_hostnames) == set(hostnames)
 
     def test_prometheus_metrics(self, prometheus_api):
         metric = prometheus_api.get_query("prometheus_build_info")
         assert len(metric) != 0
 
-    @pytest.mark.skip(reason="Temporary disabling")
     @pytest.mark.parametrize("target,metrics", target_metrics.items(),
                              ids=target_metrics.keys())
-    def test_system_metrics(self, prometheus_api, cluster, target, metrics):
-        expected_hostnames = [h.hostname for h in cluster.hosts]
+    def test_system_metrics(self, prometheus_api, salt_actions,
+                            target, metrics):
+        nodes = salt_actions.ping()
+        expected_hostnames = [node.split(".")[0] for node in nodes]
         for hostname in expected_hostnames:
             q = ('{{__name__=~"^{}.*", host="{}"}}'.format(target, hostname))
             logger.info("Waiting to get all metrics")
@@ -94,8 +81,8 @@ class TestMetrics(object):
                 lambda: self.verify_notifications(prometheus_api, metrics, q),
                 timeout=5 * 60, interval=10, timeout_msg=msg)
 
-    def test_k8s_metrics(self, cluster, prometheus_api):
-        nodes = cluster.filter_by_role("kubernetes")
+    def test_k8s_metrics(self, salt_actions, prometheus_api):
+        nodes = salt_actions.ping("services:kubernetes", expr_form="grain")
 
         if not nodes:
             pytest.skip("There are no kubernetes nodes in the cluster")
@@ -112,8 +99,8 @@ class TestMetrics(object):
             msg = "Metric {} not found".format(metric)
             assert len(output) != 0, msg
 
-    def test_mysql_metrics(self, cluster):
-        mysql_hosts = cluster.filter_by_role("galera")
+    def test_mysql_metrics(self, salt_actions):
+        mysql_hosts = salt_actions.ping("services:galera", expr_form="grain")
         expected_metrics = [
             'mysql_wsrep_connected', 'mysql_wsrep_local_cert_failures',
             'mysql_wsrep_local_commits', 'mysql_wsrep_local_send_queue',
@@ -152,9 +139,9 @@ class TestMetrics(object):
             expected_metrics.append("mysql_handler_{}".format(handler))
 
         for host in mysql_hosts:
-            got_metrics = host.os.exec_command(
-                "curl -s localhost:9126/metrics | awk '/^mysql/{print $1}'")
-            hostname = host.hostname
+            cmd = "curl -s localhost:9126/metrics | awk '/^mysql/{print $1}'"
+            got_metrics = salt_actions.run_cmd(host, cmd)[0].split("\n")
+            hostname = host.split(".")[0]
             for metric in expected_metrics:
                 metric = (metric + '{host="' + hostname +
                           '",server="/var/run/mysqld/mysqld.sock"}')

@@ -1,4 +1,3 @@
-import subprocess
 import socket
 
 import yaml
@@ -12,6 +11,7 @@ try:
     import salt.client as client
 except ImportError:
     pass
+
 
 class LOG(object):
     @staticmethod

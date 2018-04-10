@@ -6,7 +6,7 @@ export LC_ALL=C
 
 pip install virtualenv
 pip install --upgrade pip
-virtualenv ../venv-stacklight-test
+virtualenv --system-site-packages ../venv-stacklight-test
 source ../venv-stacklight-test/bin/activate
 
 pip install -r requirements.txt

@@ -3,13 +3,15 @@ import socket
 
 
 class TestPrometheusSmoke(object):
-    def test_prometheus_container(self, cluster):
-        prometheus_nodes = cluster.filter_by_role("monitoring")
+    def test_prometheus_container(self, salt_actions):
+        prometheus_nodes = salt_actions.ping(
+            "I@prometheus:server and I@docker:client")
 
         def test_prometheus_container_up(node):
-            status = node.exec_command(
+            status = salt_actions.run_cmd(
+                node,
                 "docker ps --filter name=monitoring_server "
-                "--format '{{.Status}}'")
+                "--format '{{.Status}}'")[0]
             return "Up" in status
 
         assert any([test_prometheus_container_up(node)
@@ -53,7 +55,7 @@ class TestAlertmanagerSmoke(object):
             result = False
         assert result
 
-    def test_alertmanager_ha(self, cluster, prometheus_config):
+    def test_alertmanager_ha(self, salt_actions, prometheus_config):
         """Check alertmanager HA .
 
         Scenario:
@@ -62,13 +64,15 @@ class TestAlertmanagerSmoke(object):
             3. Check that alertmanager endpoint is available
         Duration 1m
         """
-        prometheus_nodes = cluster.filter_by_role("monitoring")
+        prometheus_nodes = salt_actions.ping(
+            "I@prometheus:server and I@docker:client")
         for host in prometheus_nodes:
-            alertmanager_docker_id = host.exec_command(
-                "docker ps | grep alertmanager | awk '{print $1}'")
+            alertmanager_docker_id = salt_actions.run_cmd(
+                host,
+                "docker ps | grep alertmanager | awk '{print $1}'")[0]
             if alertmanager_docker_id:
                 command = "docker kill " + str(alertmanager_docker_id)
-                host.exec_command(command)
+                salt_actions.run_cmd(host, command)
                 return TestAlertmanagerSmoke. \
                     test_alertmanager_endpoint_availability(self,
                                                             prometheus_config)

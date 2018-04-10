@@ -162,7 +162,8 @@ class MKConfig(object):
         def get_port(input_line):
             return input_line["ports"][0].split(":")[0]
 
-        _param = self.get_application_node(["prometheus_server", "service.docker.client"])['parameters']
+        _param = self.get_application_node(
+            ["prometheus_server", "service.docker.client"])['parameters']
         expose_params = (
             _param["docker"]["client"]["stack"]["monitoring"]["service"])
 

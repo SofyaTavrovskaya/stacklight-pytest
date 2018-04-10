@@ -38,7 +38,8 @@ def determinate_components_names():
 
 
 def get_all_dashboard_names_with_datasource():
-    get_all_names = influxdb_grafana_api_legacy_v2.get_all_grafana_dashboards_names
+    get_all_names = influxdb_grafana_api_legacy_v2.\
+        get_all_grafana_dashboards_names
     dashboards = {}
     for datasource in ("influxdb", "prometheus"):
         dashboards.update(
