@@ -4,7 +4,7 @@ import socket
 
 class TestPrometheusSmoke(object):
     def test_prometheus_container(self, cluster):
-        prometheus_nodes = cluster.filter_by_role("prometheus")
+        prometheus_nodes = cluster.filter_by_role("monitoring")
 
         def test_prometheus_container_up(node):
             status = node.exec_command(
@@ -62,7 +62,7 @@ class TestAlertmanagerSmoke(object):
             3. Check that alertmanager endpoint is available
         Duration 1m
         """
-        prometheus_nodes = cluster.filter_by_role("prometheus")
+        prometheus_nodes = cluster.filter_by_role("monitoring")
         for host in prometheus_nodes:
             alertmanager_docker_id = host.exec_command(
                 "docker ps | grep alertmanager | awk '{print $1}'")
