@@ -1,5 +1,5 @@
 try:
-    import salt.client as client
+    import salt.client
 except ImportError:
     pass
 
