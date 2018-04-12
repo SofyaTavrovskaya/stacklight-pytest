@@ -134,7 +134,7 @@ class TestOpenstackMetrics(object):
         volumes_count = len([vol for vol in client.volumes.list(
                              search_opts=filter)])
         volumes_size = sum([vol.size for vol in client.volumes.list(
-                            search_opts=filter)]) * 10**9
+                            search_opts=filter)]) * 1024**3
 
         count_query = ('{{__name__="openstack_cinder_volumes",'
                        'status="{0}"}}'.format(expected_volume_status))
