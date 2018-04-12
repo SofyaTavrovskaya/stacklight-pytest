@@ -44,15 +44,16 @@ class InfluxdbApi(object):
         # like "FROM /apache_workers/", so we should not check it
         return None
 
-    def do_influxdb_query(self, query, expected_codes=(200,)):
+    def do_influxdb_query(self, query, user=None, password=None,
+                          expected_codes=(200,)):
         logger.debug('Query is: %s', query)
         response = check_http_get_response(
             url=urlparse.urljoin(self.influx_db_url, "query"),
             expected_codes=expected_codes,
             params={
                 "db": self.db_name,
-                "u": self.username,
-                "p": self.password,
+                "u": user if user else self.username,
+                "p": password if password else self.password,
                 "q": query})
         logger.debug(response.json())
         return response
@@ -68,10 +69,9 @@ class InfluxdbApi(object):
         return self.do_influxdb_query(
             query, **kwargs).json()["results"][0]["series"][0]["values"]
 
-    def check_influxdb_online(self):
-        measurements = self.get_all_measurements()
-        env_name = self.get_environment_name()
-        return measurements, env_name
+    def check_influxdb_online(self, user=None, password=None):
+        self.get_all_measurements(user=user, password=password)
+        self.get_environment_name(user=user, password=password)
 
     def check_status(self, service_type, hostname, value,
                      time_interval="now() - 30s"):
@@ -166,13 +166,15 @@ class InfluxdbApi(object):
                 return Result(False, None, None)
             raise custom_exceptions.TimeoutError(e)
 
-    def get_environment_name(self):
+    def get_environment_name(self, user=None, password=None):
         query = "show tag values from cpu_usage_idle with key = host"
-        env_name = self.do_influxdb_query(query=query).json()["results"][0]
+        env_name = self.do_influxdb_query(
+            user=user, password=password, query=query).json()["results"][0]
         assert env_name
 
-    def get_all_measurements(self):
+    def get_all_measurements(self, user=None, password=None):
         measurements = self.do_influxdb_query(
+            user=user, password=password,
             query="show measurements").json()["results"][0]
         assert measurements
 

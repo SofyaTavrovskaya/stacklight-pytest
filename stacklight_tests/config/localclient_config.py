@@ -107,6 +107,8 @@ class MKConfig(object):
                 _param.get('prometheus_influxdb_password') or "lmapass",
             "influxdb_db_name":
                 _param.get('prometheus_influxdb_db') or "prometheus",
+            "influxdb_admin_password":
+                _param.get('influxdb_admin_password') or "password",
         }
 
     def generate_elasticsearch_config(self):
