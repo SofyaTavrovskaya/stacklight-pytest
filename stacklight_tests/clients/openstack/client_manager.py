@@ -131,7 +131,7 @@ class OfficialClientManager(object):
         session = cls._get_auth_session(
             username=username, password=password, tenant_name=tenant_name,
             auth_url=auth_url, cert=cert, domain=domain)
-        service_type = 'volume'
+        service_type = 'volumev3'
         return cinder_client.Client(
             version=cls.CINDERCLIENT_VERSION,
             service_type=service_type,

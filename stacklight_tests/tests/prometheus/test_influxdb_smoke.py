@@ -21,7 +21,8 @@ def check_service_running(cluster, name, role=None):
 
 class TestInfluxDbSmoke(object):
 
-    def test_influxdb_installed(self, cluster, influxdb_client):
+    def test_influxdb_installed(self, cluster, influxdb_client,
+                                influxdb_config):
         """Smoke test that checks basic features of InfluxDb.
 
         Scenario:
@@ -31,10 +32,16 @@ class TestInfluxDbSmoke(object):
 
         Duration 1m
         """
+        nodes = cluster.filter_by_role("prometheus_server")
         service = "influxdb"
         check_service_installed(cluster, service, "influxdb")
         check_service_running(cluster, service, "influxdb")
-        influxdb_client.check_influxdb_online()
+        if "service.prometheus.relay" in [node.roles for node in nodes][0]:
+            influxdb_client.check_influxdb_online(
+                user="root",
+                password=influxdb_config["influxdb_admin_password"])
+        else:
+            influxdb_client.check_influxdb_online()
 
     def test_influxdb_relay_installed(self, cluster):
         """Smoke test that checks basic features of InfluxDb.
