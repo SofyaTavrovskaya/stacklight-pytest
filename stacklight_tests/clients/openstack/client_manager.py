@@ -10,6 +10,7 @@ from novaclient import client as novaclient
 from stacklight_tests import file_cache
 from stacklight_tests import settings
 from stacklight_tests import utils
+import os
 
 
 class OfficialClientManager(object):
@@ -23,9 +24,12 @@ class OfficialClientManager(object):
     KEYSTONECLIENT_VERSION = 2, 0
     NEUTRONCLIENT_VERSION = 2
     NOVACLIENT_VERSION = 2
+    INTERFACE = 'admin'
+    if "OS_ENDPOINT_TYPE" in os.environ.keys():
+        INTERFACE = os.environ["OS_ENDPOINT_TYPE"]
 
     def __init__(self, username=None, password=None,
-                 tenant_name=None, auth_url=None, endpoint_type="publicURL",
+                 tenant_name=None, auth_url=None, endpoint_type="internalURL",
                  cert=False, domain="Default", **kwargs):
         self.traceback = ""
 
@@ -122,7 +126,8 @@ class OfficialClientManager(object):
             auth_url=auth_url, cert=cert, domain=domain)
         service_type = 'network'
         return neutron_client.Client(
-            service_type=service_type, session=session, **kwargs)
+            service_type=service_type, session=session,
+            interface=cls.INTERFACE, **kwargs)
 
     @classmethod
     def get_volume_client(cls, username=None, password=None,
@@ -135,6 +140,7 @@ class OfficialClientManager(object):
         return cinder_client.Client(
             version=cls.CINDERCLIENT_VERSION,
             service_type=service_type,
+            interface=cls.INTERFACE,
             session=session, **kwargs)
 
     @classmethod
@@ -148,6 +154,7 @@ class OfficialClientManager(object):
         return glance_client.Client(
             version=cls.GLANCECLIENT_VERSION,
             service_type=service_type,
+            interface=cls.INTERFACE,
             session=session, **kwargs)
 
     @classmethod
@@ -162,6 +169,7 @@ class OfficialClientManager(object):
         return heat_client.Client(
             version=cls.HEATCLIENT_VERSION,
             service_type=service_type,
+            interface=cls.INTERFACE,
             session=session, **kwargs)
 
     @property
