@@ -31,6 +31,7 @@ class TestInfluxDbSmoke(object):
 
         Duration 1m
         """
+        pytest.skip("This test will be skipped")
         service = "influxdb"
         check_service_installed(cluster, service)
         check_service_running(cluster, service)
@@ -46,6 +47,7 @@ class TestInfluxDbSmoke(object):
 
         Duration 1m
         """
+        pytest.skip("This test will be skipped")
         service = "influxdb-relay"
         check_service_installed(cluster, service)
         check_service_running(cluster, service)

@@ -3,9 +3,11 @@ import socket
 
 class TestPrometheusSmoke(object):
     def test_prometheus_container(self, cluster):
+        pytest.skip("This test will be skipped")
         prometheus_nodes = cluster.filter_by_role("prometheus")
 
         def test_prometheus_container_up(node):
+            pytest.skip("This test will be skipped")
             status = node.exec_command(
                 "docker ps --filter name=monitoring_server "
                 "--format '{{.Status}}'")
@@ -15,6 +17,7 @@ class TestPrometheusSmoke(object):
                     for node in prometheus_nodes])
 
     def test_prometheus_datasource(self, prometheus_api):
+        pytest.skip("This test will be skipped")
         assert prometheus_api.get_all_measurements()
 
 
@@ -27,6 +30,7 @@ class TestAlertmanagerSmoke(object):
             2. Check that alertmanager endpoint is available
         Duration 1m
         """
+        pytest.skip("This test will be skipped")
         port = int(prometheus_config["prometheus_alertmanager"])
         alertmanager_ip = prometheus_config["prometheus_vip"]
         try:
@@ -47,6 +51,7 @@ class TestAlertmanagerSmoke(object):
             3. Check that alertmanager endpoint is available
         Duration 1m
         """
+        pytest.skip("This test will be skipped")
         prometheus_nodes = cluster.filter_by_role("prometheus")
         for host in prometheus_nodes:
             alertmanager_docker_id = host.exec_command(
