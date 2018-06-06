@@ -1,3 +1,4 @@
+from alertaclient.api import Client
 import pytest
 
 from stacklight_tests.clients import es_kibana_api
@@ -40,6 +41,14 @@ def prometheus_alerting(prometheus_config, prometheus_native_alerting):
             )
         )
     return alerting
+
+
+@pytest.fixture(scope="session")
+def alerta_api(alerta_config):
+    endpoint = "http://{0}:{1}/api".format(alerta_config["alerta_host"],
+                                           alerta_config["alerta_port"])
+    client = Client(endpoint=endpoint, ssl_verify=False)
+    return client
 
 
 @pytest.fixture(scope="session")

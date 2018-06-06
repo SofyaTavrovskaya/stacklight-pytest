@@ -63,6 +63,7 @@ class MKConfig(object):
                 "grafana.client": "grafana_client",
                 "kibana.server": "elasticsearch_server",
                 "prometheus.server": "prometheus_server",
+                "prometheus.alerta": "alerta",
             }
             cls_based_roles = [
                 role for role_name, role in roles_mapping.items()
@@ -176,6 +177,21 @@ class MKConfig(object):
                 get_port(expose_params["alertmanager"]),
             "prometheus_pushgateway":
                 get_port(expose_params["pushgateway"]),
+        }
+
+    def generate_alerta_config(self):
+        def get_port(input_line):
+            return input_line["ports"][0].split(":")[0]
+        _param = self.get_application_node(
+            ["alerta", "service.docker.client"])['parameters']
+        expose_params = (
+            _param["docker"]["client"]["stack"]["monitoring"]["service"])
+
+        return {
+            "alerta_host": _param["_param"]["prometheus_control_address"],
+            "alerta_port":
+                get_port(expose_params["alerta"]),
+            "alerta_username": _param["_param"]["alerta_admin_username"]
         }
 
     def main(self):

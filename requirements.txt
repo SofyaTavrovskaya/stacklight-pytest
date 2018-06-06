@@ -1,3 +1,4 @@
+alerta
 cssselect==1.0.1 # BSD License
 elasticsearch<=2.4.0  # Apache-2.0
 lxml>=3.7.2 # BSD License
