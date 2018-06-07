@@ -110,13 +110,14 @@ class PrometheusQueryAlertClient(AlertBehaviorMixin,
 
 
 class Alert(object):
-    def __init__(self, name, time, host, service, severity,
+    def __init__(self, name, time, host, service, severity, instance
                  value=None, annotations=None):
         self.name = name
         self.time = time
         self.host = host
         self.service = service
         self.severity = severity
+        self.instance = instance
         self.value = value
         self.annotations = annotations
 
@@ -166,7 +167,8 @@ def get_alert_from_alert_manager_dict(json_repr):
     return AlertManagerAlert(
         name=json_repr["labels"]["alertname"],
         time=(json_repr["startsAt"], json_repr["endsAt"]),
-        host=json_repr["labels"]["host"],
+        instance=json_repr["labels"]["instance"],
+        host=json_repr["labels"].get("host", ""),
         service=json_repr["labels"]["service"],
         severity=json_repr["labels"]["severity"],
         annotations=json_repr["annotations"],
@@ -178,6 +180,7 @@ def get_alert_from_query_dict(json_repr):
         name=json_repr["metric"]["alertname"],
         time=json_repr["value"][0],
         host=json_repr["metric"].get("host", ""),
+        instance=json_repr["metric"].get("instance", ""),
         service=json_repr["metric"].get("service", ""),
         severity=json_repr["metric"]["severity"],
         value=int(json_repr["value"][1]),
