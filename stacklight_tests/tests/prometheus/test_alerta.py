@@ -6,7 +6,7 @@ def test_alerta_smoke(alerta_api):
     alerta_api.get_count()
 
 @pytest.mark.smoke
-def test_system_load_alerts(prometheus_native_alerting, alerta_api):
+def test_alerta_alerts_consistency(prometheus_native_alerting, alerta_api):
     alerta_alerts = {"{0} {1}".format(i.event, i.resource)
                      for i in alerta_api.get_alerts({"status": "open"})}
     alertmanager_alerts = {"{0} {1}".format(i.name, i.instance)
