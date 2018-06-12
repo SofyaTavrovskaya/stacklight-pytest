@@ -110,7 +110,7 @@ class PrometheusQueryAlertClient(AlertBehaviorMixin,
 
 
 class Alert(object):
-    def __init__(self, name, time, host, service, severity, instance
+    def __init__(self, name, time, host, service, severity, instance,
                  value=None, annotations=None):
         self.name = name
         self.time = time
