@@ -47,7 +47,7 @@ class TestMetrics(object):
     def test_etcd_metrics(self, salt_actions, prometheus_api):
         nodes = salt_actions.ping("services:etcd", expr_form="grain")
         expected_hostnames = [
-            salt_actions.get_pillar_item(node, "_param:single_address")[0]
+            salt_actions.get_pillar_item(node, "etcd:server:bind:host")[0]
             for node in nodes]
 
         metrics = prometheus_api.get_query("etcd_server_has_leader")
