@@ -21,20 +21,48 @@ class Dashboard(object):
 
     @property
     def panels(self):
-        for row in self.dash_dict["dashboard"]["rows"]:
-            for panel in row["panels"]:
-                yield panel, row
+        # Handle old style nested panels
+        if "rows" in self.dash_dict["dashboard"]:
+            for row in self.dash_dict["dashboard"]["rows"]:
+                for panel in row["panels"]:
+                    yield panel, row
+
+        # Handle new style flat panels
+        if "panels" in self.dash_dict["dashboard"]:
+            row = {"title": "No row"}
+            for panel in self.dash_dict["dashboard"]["panels"]:
+                if panel["type"] == "row":
+                    row["title"] = panel["title"]
+                else:
+                    yield panel, row
 
     def get_templates_tree(self):
         if "templating" not in self.dash_dict["dashboard"]:
             template_queries = {}
         else:
-            template_queries = {
-                "${}".format(item["name"]): (item["query"], item["regex"])
-                for item in self.dash_dict["dashboard"]["templating"]["list"]
-            }
+            template_queries = {}
+            defaults_update = {}
+
+            for item in self.dash_dict["dashboard"]["templating"]["list"]:
+                # Handle static templating variables
+                if item["type"] in ["interval", "custom"]:
+                    if isinstance(item["current"]["value"], list):
+                        value = item["current"]["value"][0]
+                    else:
+                        value = item["current"]["value"]
+                    defaults_update.update({
+                        "${}".format(item["name"]): value
+                        })
+
+                # Handle query templating variables
+                if item["type"] == "query":
+                    template_queries.update({
+                        "${}".format(item["name"]): (item["query"], item["regex"])
+                        })
+
         return grafana_templates_builder.TemplatesTree(template_queries,
-                                                       self._datasource)
+                                                       self._datasource,
+                                                       defaults_update)
 
     def get_all_templates_for_query(self, query):
         return self._templates_tree.get_all_templates_for_query(query)

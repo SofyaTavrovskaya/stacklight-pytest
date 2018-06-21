@@ -6,12 +6,15 @@ from stacklight_tests import utils
 
 
 class TemplatesTree(object):
-    def __init__(self, queries, datasource):
+    def __init__(self, queries, datasource, append_default=None):
+        if append_default is None:
+            append_default = {}
         self.queries = queries
         self.default_templates = {
             "$interval": "1m",
             "$timeFilter": "time > now() - 1h",
         }
+        self.default_templates.update(append_default)
         self.dependencies = {
             k: self.parse_dependencies(v) for k, (v, _) in self.queries.items()
         }
