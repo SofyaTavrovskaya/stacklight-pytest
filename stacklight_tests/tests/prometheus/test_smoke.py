@@ -5,7 +5,7 @@ import socket
 class TestPrometheusSmoke(object):
     def test_prometheus_container(self, salt_actions):
         prometheus_nodes = salt_actions.ping(
-            "I@prometheus:server and I@docker:client")
+            "prometheus:alertmanager", expr_form="pillar")
 
         def test_prometheus_container_up(node):
             status = salt_actions.run_cmd(
@@ -24,15 +24,14 @@ class TestPrometheusSmoke(object):
         hosts = salt_actions.ping("I@prometheus:relay")
         if not hosts:
             pytest.skip("Prometheus relay is not installed in the cluster")
-        url = salt_actions.get_pillar_item(
-            '*', "_param:grafana_prometheus_address")[0]
+        backends = [h["host"] for h in salt_actions.get_pillar_item(
+            hosts[0], "prometheus:relay:backends")[0]]
         port = salt_actions.get_pillar_item(
-            hosts[0], "prometheus:relay:bind:port")[0]
-        output = salt_actions.run_cmd(
-            hosts[0],
-            "curl -s {}:{}/metrics | awk '/^prometheus/{{print $1}}'".format(
-                url, port))
-        assert output
+            hosts[0], "prometheus:relay:backends:port")[0]
+        cmd = "curl -s {}:{}/metrics | awk '/^prometheus/{{print $1}}'"
+        outputs = [salt_actions.run_cmd(hosts[0], cmd.format(b, port))[0]
+                   for b in backends]
+        assert len(set(outputs)) == 1
 
 
 class TestAlertmanagerSmoke(object):

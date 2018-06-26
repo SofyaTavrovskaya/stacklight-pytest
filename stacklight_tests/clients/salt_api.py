@@ -12,8 +12,9 @@ class SaltApi(object):
         return self.salt_api.cmd(
             tgt, "cmd.run", [command], expr_form=expr_form).values()
 
-    def ping(self, tgt='*', expr_form='compound'):
-        nodes = self.salt_api.cmd(tgt, "test.ping", expr_form=expr_form).keys()
+    def ping(self, tgt='*', timeout=3, expr_form='compound'):
+        nodes = self.salt_api.cmd(tgt, "test.ping", timeout=timeout,
+                                  expr_form=expr_form).keys()
         return nodes
 
     def get_pillar(self, tgt, pillar, expr_form='compound'):
