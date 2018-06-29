@@ -68,7 +68,8 @@ def get_all_grafana_dashboards_names():
         "Prometheus Performances": "prometheus",
         "Prometheus Stats": "prometheus",
         "RabbitMQ": "rabbitmq",
-        "System": "linux",
+        # System dasboard was divided into three, skip:
+        # "System": "linux",
         "System Overview": "linux",
         "System Networking": "linux",
         "System Disk I O": "linux",
