@@ -60,26 +60,34 @@ class TestOpenstackMetrics(object):
 
     def test_keystone_metrics(self, prometheus_api, os_clients):
         client = os_clients.auth
-        tenants = client.tenants.list()
+        tenants = client.projects.list()
         users = client.users.list()
+        # Hack for users with non default domain_id:
+        users = [user for user in users if user.domain_id == "default"]
 
         metric_dict = {
             '{__name__="openstack_keystone_tenants_total"}':
                 [len(tenants), "Incorrect tenant count in metric {}"],
+
             'openstack_keystone_tenants{state="enabled"}':
                 [len(filter(lambda x: x.enabled, tenants)),
                  "Incorrect enabled tenant count in metric {}"],
+
             'openstack_keystone_tenants{state="disabled"}':
                 [len(filter(lambda x: not x.enabled, tenants)),
                  "Incorrect disabled tenant count in metric {}"],
+
             '{__name__="openstack_keystone_roles_roles"}':
                 [len(client.roles.list()),
                  "Incorrect roles count in metric {}"],
+
             '{__name__="openstack_keystone_users_total"}':
                 [len(users), "Incorrect user count in metric {}"],
+
             'openstack_keystone_users{state="enabled"}':
                 [len(filter(lambda x: x.enabled, users)),
                  "Incorrect enabled user count in metric {}"],
+
             'openstack_keystone_users{state="disabled"}':
                 [len(filter(lambda x: not x.enabled, users)),
                  "Incorrect disabled user count in metric {}"]
