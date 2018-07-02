@@ -30,7 +30,7 @@ class TemplatesTree(object):
 
     @staticmethod
     def parse_dependencies(query):
-        return re.findall("\$\w+", query)
+        return re.findall("\$[a-zA-Z_]\w+", query)
 
     def _build_abs_tree(self):
         """Builds abstract tree of dependencies.
