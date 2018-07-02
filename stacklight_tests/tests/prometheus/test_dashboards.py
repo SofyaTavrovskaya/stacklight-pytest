@@ -51,7 +51,7 @@ def get_all_grafana_dashboards_names():
         "Glance": "glance",
         "GlusterFS": "glusterfs",
         "HAProxy": "haproxy",
-        "Hypervisor": "service.nova.compute.kvm",
+        "Nova Hypervisor Overview": "service.nova.compute.kvm",
         "Heat": "heat",
         "InfluxDB": "influxdb",
         "InfluxDB Relay": "influxdb",
@@ -61,7 +61,10 @@ def get_all_grafana_dashboards_names():
         "Memcached": "memcached",
         "MySQL": "galera.master",
         "Neutron": "service.neutron.control.cluster",
-        "Nova": "nova",
+        "Nova Overview": "nova",
+        "Nova Instances": "nova",
+        "Nova Utilization": "nova",
+        "Openstack overview": "nova",
         "Ntp": "linux",
         "Nginx": "nginx",
         "OpenContrail": "opencontrail",
@@ -78,6 +81,7 @@ def get_all_grafana_dashboards_names():
         "Alertmanager": "prometheus",
         "Zookeeper": "opencontrail",
         "Pushgateway": "prometheus",
+        "Prometheus Relay": "prometheus.relay",
     }
 
     return {idfy_name(k): v for k, v in dashboards.items()}
