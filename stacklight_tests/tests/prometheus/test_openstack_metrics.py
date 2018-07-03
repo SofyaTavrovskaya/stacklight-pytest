@@ -19,7 +19,7 @@ class TestOpenstackMetrics(object):
             return v in output[0]["value"]
         utils.wait(
             lambda: _verify_notifications(query, str(value)),
-            interval=10, timeout=2 * 60, timeout_msg=msg
+            interval=30, timeout=5 * 60, timeout_msg=msg
         )
 
     def test_glance_metrics(self, destructive, prometheus_api, os_clients):
