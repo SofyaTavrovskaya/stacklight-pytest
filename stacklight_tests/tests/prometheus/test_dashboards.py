@@ -211,3 +211,13 @@ def test_panels_fixture(grafana_client):
     assert len(missing_dashboards) == 0, \
         ("Update test data fixture with the missing dashboards: "
          "{}".format(missing_dashboards))
+
+
+def test_grafana_database_type(salt_actions):
+    db_type = salt_actions.get_pillar_item(
+        "I@grafana:client",
+        "docker:client:stack:"
+        "dashboard:service:grafana:"
+        "environment:GF_DATABASE_TYPE")[0]
+
+    assert db_type == "mysql"
