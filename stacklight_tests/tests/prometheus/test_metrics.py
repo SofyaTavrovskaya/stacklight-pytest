@@ -1,5 +1,6 @@
 import logging
 import pytest
+import os
 
 from stacklight_tests import utils
 
@@ -74,6 +75,10 @@ class TestMetrics(object):
         nodes = salt_actions.ping()
         expected_hostnames = [node.split(".")[0] for node in nodes]
         for hostname in expected_hostnames:
+            if "SKIP_NODES" in os.environ.keys():
+                if hostname in os.environ['SKIP_NODES']:
+                    print "Skip {}".format(hostname)
+                    continue
             q = ('{{__name__=~"^{}.*", host="{}"}}'.format(target, hostname))
             logger.info("Waiting to get all metrics")
             msg = "Timed out waiting to get all metrics"
