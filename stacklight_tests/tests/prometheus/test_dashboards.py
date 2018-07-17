@@ -17,6 +17,127 @@ ignored_queries_for_fail = [
     # Partial Elasticsearch metric PROD-19161
     'quantile_over_time(0.9, elasticsearch_indices_flush_total_latency'
     '{host="$host"}[5m])',
+
+    # We can have situation without 5xx errors
+    'sum(rate(openstack_http_response_times_count{http_status=~"5.."}'
+    '[$rate_interval])) by (service)',
+
+    # We can have only enabled/up cinder services
+    'max(count(openstack_cinder_service_state{binary="cinder-volume"} == 0 '
+    'and openstack_cinder_service_status{binary="cinder-volume"} == 0) '
+    'by (instance))',
+    'max(count(openstack_cinder_service_state{binary="cinder-volume"} == 0 '
+    'and openstack_cinder_service_status{binary="cinder-volume"} == 1) '
+    'by (instance))',
+    'max(count(openstack_cinder_service_state{binary="cinder-volume"} == 1 '
+    'and openstack_cinder_service_status{binary="cinder-volume"} == 0) '
+    'by (instance))',
+    'max(count(openstack_cinder_service_state{binary="cinder-scheduler"} == 1 '
+    'and openstack_cinder_service_status{binary="cinder-scheduler"} == 0) '
+    'by (instance))',
+    'max(count(openstack_cinder_service_state{binary="cinder-scheduler"} == 0 '
+    'and openstack_cinder_service_status{binary="cinder-scheduler"} == 1) '
+    'by (instance))',
+    'max(count(openstack_cinder_service_state{binary="cinder-scheduler"} == 0 '
+    'and openstack_cinder_service_status{binary="cinder-scheduler"} == 0) '
+    'by (instance))',
+
+    # Skip 0 as query, that is just visual line
+    '0',
+
+    # We can have installation without SSL on haproxy
+    'max(haproxy_server_ssl_connections {host=~"$host"}) without(pid) > 0',
+
+    # We can have no stopped instances of influxdb
+    'count(influxdb_up == 0)',
+
+    # Skip 1.x prometheus metric
+    'prometheus_local_storage_target_heap_size_bytes'
+    '{instance=~"$instance:[1-9][0-9]*"}',
+
+    # We can have only up and enabled agents
+    'max(count(openstack_neutron_agent_state{binary="neutron-metadata-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-metadata-agent"} '
+    '== 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-metadata-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-metadata-agent"} '
+    '== 1) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-metadata-agent"} '
+    '== 1 and openstack_neutron_agent_status{binary="neutron-metadata-agent"} '
+    '== 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-openvswitch-'
+    'agent"} == 1 and openstack_neutron_agent_status{binary="neutron-'
+    'openvswitch-agent"} == 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-openvswitch-'
+    'agent"} == 0 and openstack_neutron_agent_status{binary="neutron-'
+    'openvswitch-agent"} == 1) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-openvswitch-'
+    'agent"} == 0 and openstack_neutron_agent_status{binary="neutron-'
+    'openvswitch-agent"} == 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-l3-agent"} '
+    '== 1 and openstack_neutron_agent_status{binary="neutron-l3-agent"} '
+    '== 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-l3-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-l3-agent"} '
+    '== 1) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-l3-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-l3-agent"} '
+    '== 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-dhcp-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-dhcp-agent"} '
+    '== 0) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-dhcp-agent"} '
+    '== 0 and openstack_neutron_agent_status{binary="neutron-dhcp-agent"} '
+    '== 1) by (instance))',
+    'max(count(openstack_neutron_agent_state{binary="neutron-dhcp-agent"} '
+    '== 1 and openstack_neutron_agent_status{binary="neutron-dhcp-agent"} '
+    '== 0) by (instance))',
+
+    # Right after deployment we have no lbaases and instances
+    'max(sum(openstack_neutron_ports{owner=~"compute:.*"}) by '
+    '(instance,state)) by (state)',
+    'max(openstack_neutron_lbaas_loadbalancers) by (status)',
+
+    # We can have only up and enabled nova services
+    'max(count(openstack_nova_service_state{service="nova-compute"} == 0 '
+    'and openstack_nova_service_status{service="nova-compute"} == 1) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{service="nova-compute"} == 1 '
+    'and openstack_nova_service_status{service="nova-compute"} == 0) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{service="nova-compute"} == 0 '
+    'and openstack_nova_service_status{service="nova-compute"} == 0) by '
+    '(instance))',
+
+    'max(count(openstack_nova_service_state{binary="nova-scheduler"} == 0 '
+    'and openstack_nova_service_status{binary="nova-scheduler"} == 1) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-scheduler"} == 1 '
+    'and openstack_nova_service_status{binary="nova-scheduler"} == 0) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-scheduler"} == 0 '
+    'and openstack_nova_service_status{binary="nova-scheduler"} == 0) by '
+    '(instance))',
+
+    'max(count(openstack_nova_service_state{binary="nova-consoleauth"} == 1 '
+    'and openstack_nova_service_status{binary="nova-consoleauth"} == 0) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-consoleauth"} == 0 '
+    'and openstack_nova_service_status{binary="nova-consoleauth"} == 1) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-consoleauth"} == 0 '
+    'and openstack_nova_service_status{binary="nova-consoleauth"} == 0) by '
+    '(instance))',
+
+    'max(count(openstack_nova_service_state{binary="nova-conductor"} == 0 '
+    'and openstack_nova_service_status{binary="nova-conductor"} == 1) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-conductor"} == 1 '
+    'and openstack_nova_service_status{binary="nova-conductor"} == 0) by '
+    '(instance))',
+    'max(count(openstack_nova_service_state{binary="nova-conductor"} == 0 '
+    'and openstack_nova_service_status{binary="nova-conductor"} == 0) by '
+    '(instance))',
 ]
 
 
@@ -76,7 +197,7 @@ def get_all_grafana_dashboards_names():
         "System Overview": "linux",
         "System Networking": "linux",
         "System Disk I O": "linux",
-        "Remote storage adapter": "influxdb",
+        "Remote storage adapter": "prometheus.remote_storage_adapter",
         "Grafana": "grafana",
         "Alertmanager": "prometheus",
         "Zookeeper": "opencontrail",

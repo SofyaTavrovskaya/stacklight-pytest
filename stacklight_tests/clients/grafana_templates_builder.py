@@ -64,11 +64,11 @@ class TemplatesTree(object):
         return values
 
     def _fill_top_level(self):
-        dep_name = self.levels_by_name.keys()[0]
-        parent = None
-        values = self._query_values_for_template(dep_name, {})
-        for value in values:
-            self.add_template(value, dep_name, parent)
+        for dep_name in self.levels_by_name.keys():
+            parent = None
+            values = self._query_values_for_template(dep_name, {})
+            for value in values:
+                self.add_template(value, dep_name, parent)
 
     def _build(self):
         """Fill tree with all possible values for _templates_tree.
@@ -128,7 +128,13 @@ class TemplatesTree(object):
         dep_nodes = self.get_closest_parents(dependencies)
         groups = {node.name for node in dep_nodes}
         if len(groups) > 1:
-            parents = {node.parent for node in dep_nodes}
+            parents = {node.parent
+                       for node in dep_nodes
+                       if node.parent is not None}
+
+            if not parents:
+                templates = [node.get_full_template() for node in dep_nodes]
+
             templates = \
                 list(itertools.chain(*[parent.get_templates_with_children()
                                        for parent in parents]))
