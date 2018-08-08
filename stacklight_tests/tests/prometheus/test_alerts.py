@@ -87,6 +87,7 @@ service_down_entities = {
 
 class TestPrometheusAlerts(object):
     def test_system_load_alerts(self, cluster, prometheus_alerting):
+        pytest.skip("Destructive tests are skipped")
         def check_status(is_fired=True):
             alert_names = ["SystemLoad5", "AvgCPUUsageIdle"]
             for alert_name in alert_names:
@@ -110,6 +111,7 @@ class TestPrometheusAlerts(object):
         check_status(is_fired=False)
 
     def test_system_mem_alert(self, cluster, prometheus_alerting):
+        pytest.skip("Destructive tests are skipped")
         cmp = cluster.filter_by_role("compute")[0]
         criteria = {
             "name": "AvgMemAvailablePercent",
@@ -132,6 +134,7 @@ class TestPrometheusAlerts(object):
 
     def test_predict_linear_disk_inodes_free_alert(
             self, cluster, prometheus_alerting):
+        pytest.skip("Destructive tests are skipped")
         cmp = cluster.filter_by_role("compute")[0]
         criteria = {
             "name": "PredictLinearDiskInodesFree",
@@ -150,6 +153,7 @@ class TestPrometheusAlerts(object):
 
     def test_system_predict_linear_disk_free_alert(self, cluster,
                                                    prometheus_alerting):
+        pytest.skip("Destructive tests are skipped")
         cmp = cluster.filter_by_role("compute")[0]
         criteria = {
             "name": "PredictLinearDiskFree",
@@ -168,6 +172,7 @@ class TestPrometheusAlerts(object):
 
     def test_influxdb_httpclient_error_alert(
             self, cluster, prometheus_alerting):
+        pytest.skip("Destructive tests are skipped")
         infl_node = cluster.filter_by_role("influxdb")[0]
         criteria = {
             "name": "InfluxdbHTTPClientError",
@@ -190,6 +195,7 @@ class TestPrometheusAlerts(object):
         ids=service_down_entities.keys())
     def test_service_down_alerts(self, cluster, destructive,
                                  prometheus_alerting, entities):
+        pytest.skip("Destructive tests are skipped")
         service = entities[0]
         roles = entities[1]
         target_nodes = []
@@ -221,6 +227,7 @@ class TestPrometheusAlerts(object):
 
     def test_nova_aggregates_memory(self, prometheus_api, prometheus_alerting,
                                     os_clients, os_actions, destructive):
+        pytest.skip("Destructive tests are skipped")
         def get_agg_free_ram(a_n, a_id):
             def _get_current_value(q):
                 try:
