@@ -28,5 +28,5 @@ def test_alerta_alerts_consistency(prometheus_native_alerting, alerta_api):
                     alertmanager_alerts.difference(alerta_alerts)))
             return False
 
-    utils.wait(check_alerts(), interval = 30, timeout=6 * 60,
+    utils.wait(check_alerts, interval = 30, timeout=6 * 60,
                timeout_msg="Alerts in Alertmanager and Alerta incosistent")
