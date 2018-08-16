@@ -1,7 +1,4 @@
-try:
-    import salt.client
-except ImportError:
-    pass
+import salt.client
 
 
 class SaltApi(object):
@@ -34,3 +31,20 @@ class SaltApi(object):
 
     def service_status(self, tgt, service):
         return self.salt_api.cmd(tgt, "service.status", [service])
+
+    def check_service_installed(self, name, tgt, tgt_type='compound'):
+        """Checks that service is installed on nodes with provided role."""
+        nodes = self.ping(tgt, tgt_type=tgt_type)
+        for node in nodes:
+            output = self.run_cmd(node, "dpkg-query -l {}".format(name))
+            err = "Package {} is not installed on the {} node"
+            assert "no packages found" not in output[0], err.format(
+                name, node)
+
+    def check_service_running(self, name, tgt, tgt_type='compound'):
+        """Checks that service is running on nodes with provided role."""
+        nodes = self.ping(tgt, tgt_type=tgt_type)
+        for node in nodes:
+            err = "Service {} is stopped on the {} node"
+            assert self.service_status(node, name).values()[0], err.format(
+                name, node)

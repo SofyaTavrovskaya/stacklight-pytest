@@ -50,15 +50,13 @@ class Dashboard(object):
                         value = item["current"]["value"][0]
                     else:
                         value = item["current"]["value"]
-                    defaults_update.update({
-                        "${}".format(item["name"]): value
-                        })
+                    defaults_update.update({"${}".format(item["name"]): value})
 
                 # Handle query templating variables
                 if item["type"] == "query":
                     template_queries.update({
-                        "${}".format(item["name"]): (item["query"], item["regex"])
-                        })
+                        "${}".format(
+                            item["name"]): (item["query"], item["regex"])})
 
         return grafana_templates_builder.TemplatesTree(template_queries,
                                                        self._datasource,

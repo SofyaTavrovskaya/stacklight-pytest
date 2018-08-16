@@ -68,6 +68,7 @@ class MKConfig(object):
                 "kibana.server": "elasticsearch_server",
                 "prometheus.server": "prometheus_server",
                 "prometheus.alerta": "alerta",
+                "mongodb.server": "mongodb",
             }
             cls_based_roles = [
                 role for role_name, role in roles_mapping.items()
@@ -194,6 +195,18 @@ class MKConfig(object):
             "alerta_port":
                 get_port(expose_params["alerta"]),
             "alerta_username": _param["_param"]["alerta_admin_username"]
+        }
+
+    def generate_mongodb_config(self):
+        _param = self.get_application_node(["mongodb"])['parameters'][
+            "mongodb"]["server"]
+        return {
+            "mongodb_primary": [
+                h["host"] for h in _param["members"] if h.get("priority")][0],
+            "mongodb_secondaries": [
+                h["host"] for h in _param["members"] if not h.get("priority")],
+            "mongodb_port": _param["bind"]["port"],
+            "mongodb_replica": _param["replica_set"]
         }
 
     def main(self):

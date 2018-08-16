@@ -1,4 +1,5 @@
 from alertaclient.api import Client
+from pymongo import MongoClient
 import pytest
 
 from stacklight_tests.clients import es_kibana_api
@@ -127,3 +128,9 @@ def os_actions(os_clients):
 @pytest.fixture(scope="session")
 def salt_actions():
     return salt_api.SaltApi()
+
+
+@pytest.fixture(scope="session")
+def mongodb_api(mongodb_config):
+    return MongoClient(mongodb_config["mongodb_primary"],
+                       mongodb_config["mongodb_port"])

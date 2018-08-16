@@ -5,6 +5,7 @@ lxml>=3.7.2 # BSD License
 paramiko==2.0.0 # LGPLv2.1+
 pika>=0.10.0 # BSD License
 pyOpenSSL
+pymongo
 pytest>=3.0.4  # MIT
 pytest-rerunfailures
 python-ceilometerclient>=2.5.0  # Apache-2.0
