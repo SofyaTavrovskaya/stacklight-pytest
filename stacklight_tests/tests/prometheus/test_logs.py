@@ -41,7 +41,7 @@ def test_heka_logs(es_client, salt_actions, input_data):
     pillar, logger = input_data
     if not salt_actions.ping("I@heka:log_collector"):
         pytest.skip("Heka is not installed in the cluster")
-    if not salt_actions.ping(pillar, expr_form="pillar"):
+    if not salt_actions.ping(pillar, tgt_type="pillar"):
         pytest.skip("No required nodes with pillar {}".format(pillar))
 
     assert logger in es_client.return_loggers()
@@ -53,9 +53,9 @@ def test_heka_logs(es_client, salt_actions, input_data):
                          ids=fluentd_loggers.keys())
 def test_fluentd_logs(es_client, salt_actions, input_data):
     pillar, logger = input_data
-    if not salt_actions.ping("fluentd:agent", expr_form="pillar"):
+    if not salt_actions.ping("fluentd:agent", tgt_type="pillar"):
         pytest.skip("Fluentd is not installed in the cluster")
-    if not salt_actions.ping(pillar, expr_form="pillar"):
+    if not salt_actions.ping(pillar, tgt_type="pillar"):
         pytest.skip("No required nodes with pillar {}".format(pillar))
 
     assert logger in es_client.return_loggers()

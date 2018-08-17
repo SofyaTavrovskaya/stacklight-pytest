@@ -179,9 +179,9 @@ class TestOpenstackMetrics(object):
 
     def test_nova_services_metrics(self, prometheus_api, salt_actions):
         controllers = salt_actions.ping(
-            "nova:controller:enabled:True", expr_form="pillar")
+            "nova:controller:enabled:True", tgt_type="pillar")
         computes = salt_actions.ping(
-            "nova:compute:enabled:True", expr_form="pillar")
+            "nova:compute:enabled:True", tgt_type="pillar")
         controller_services = ["nova-conductor", "nova-consoleauth",
                                "nova-scheduler"]
         compute_services = ["nova-compute"]

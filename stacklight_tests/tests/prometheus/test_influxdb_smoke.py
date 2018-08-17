@@ -1,6 +1,6 @@
 def check_service_installed(salt_actions, name, tgt):
     """Checks that service is installed on nodes with provided role."""
-    nodes = salt_actions.ping(tgt, expr_form="pillar")
+    nodes = salt_actions.ping(tgt, tgt_type="pillar")
     for node in nodes:
         output = salt_actions.run_cmd(node, "dpkg-query -l {}".format(name))
         err = "Package {} is not installed on the {} node"
@@ -10,7 +10,7 @@ def check_service_installed(salt_actions, name, tgt):
 
 def check_service_running(salt_actions, name, tgt):
     """Checks that service is running on nodes with provided role."""
-    nodes = salt_actions.ping(tgt, expr_form="pillar")
+    nodes = salt_actions.ping(tgt, tgt_type="pillar")
     for node in nodes:
         err = "Service {} is stopped on the {} node"
         assert salt_actions.service_status(node, name).values()[0], err.format(
@@ -34,7 +34,7 @@ class TestInfluxDbSmoke(object):
         check_service_installed(salt_actions, service, target)
         check_service_running(salt_actions, service, target)
         if salt_actions.ping("I@prometheus:relay"):
-            node = salt_actions.ping(target, expr_form="pillar")[0]
+            node = salt_actions.ping(target, tgt_type="pillar")[0]
             password = salt_actions.get_pillar_item(
                 node, "_param:influxdb_admin_password")[0]
             influxdb_client.check_influxdb_online(

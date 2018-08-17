@@ -5,7 +5,7 @@ import socket
 class TestPrometheusSmoke(object):
     def test_prometheus_container(self, salt_actions):
         prometheus_nodes = salt_actions.ping(
-            "prometheus:alertmanager", expr_form="pillar")
+            "prometheus:alertmanager", tgt_type="pillar")
 
         def test_prometheus_container_up(node):
             status = salt_actions.run_cmd(

@@ -45,7 +45,7 @@ class TestMetrics(object):
             return True
 
     def test_etcd_metrics(self, salt_actions, prometheus_api):
-        nodes = salt_actions.ping("services:etcd", expr_form="grain")
+        nodes = salt_actions.ping("services:etcd", tgt_type="grain")
         expected_hostnames = [
             salt_actions.get_pillar_item(node, "etcd:server:bind:host")[0]
             for node in nodes]
@@ -82,7 +82,7 @@ class TestMetrics(object):
                 timeout=5 * 60, interval=10, timeout_msg=msg)
 
     def test_k8s_metrics(self, salt_actions, prometheus_api):
-        nodes = salt_actions.ping("services:kubernetes", expr_form="grain")
+        nodes = salt_actions.ping("services:kubernetes", tgt_type="grain")
 
         if not nodes:
             pytest.skip("There are no kubernetes nodes in the cluster")
@@ -100,7 +100,7 @@ class TestMetrics(object):
             assert len(output) != 0, msg
 
     def test_mysql_metrics(self, salt_actions):
-        mysql_hosts = salt_actions.ping("services:galera", expr_form="grain")
+        mysql_hosts = salt_actions.ping("services:galera", tgt_type="grain")
         expected_metrics = [
             'mysql_wsrep_connected', 'mysql_wsrep_local_cert_failures',
             'mysql_wsrep_local_commits', 'mysql_wsrep_local_send_queue',

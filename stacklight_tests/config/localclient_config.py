@@ -32,7 +32,7 @@ class MKConfig(object):
                      .format(cluster_name))
         salt = client.LocalClient()
         inv = salt.cmd('salt:master', 'cmd.run', ['reclass --inventory'],
-                       expr_form='pillar').values()
+                       tgt_type='pillar').values()
         file_io = StringIO(''.join(inv).decode("utf-8"))
         inventory = yaml.load(file_io)
         LOG.info("Try to load nodes for domain {}".format(cluster_name))
