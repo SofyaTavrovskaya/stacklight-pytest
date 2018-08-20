@@ -12,6 +12,7 @@ from stacklight_tests import settings
 from stacklight_tests import utils
 import os
 
+
 class OfficialClientManager(object):
     """Manager that provides access to the official python clients for
     calling various OpenStack APIs.

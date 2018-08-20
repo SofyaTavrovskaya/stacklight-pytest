@@ -53,3 +53,36 @@ def test_mongodb_configuration(salt_actions, mongodb_api):
     logger.debug(mongo_status)
     assert set(hosts) == set(mongo_status["repl"]["hosts"])
     assert repl == mongo_status["repl"]["setName"]
+
+
+@pytest.mark.skip(reason="Temporary disabling")
+def test_alerts_metrics(salt_actions, prometheus_api):
+    def filter_expr(s):
+        for ch in ["(", ")", "[", "]"]:
+            if ch in s:
+                s = s.replace(ch, " ")
+        m = list(set([i.strip(",") for i in s.split() if "_" in i]))
+        for i in ["label_replace", "avg_over_time", "process_name"]:
+            if i in m:
+                m.remove(i)
+        return m
+
+    nodes = salt_actions.ping()
+    for node in nodes:
+        # Get list of alerts for the node
+        grains = salt_actions.get_grains(node, "prometheus:server:alert",
+                                         tgt_type="glob").values()[0]
+        # Alerts to exclude because metrics for them may not exist
+        exc = ["ErrorLogs", "KeystoneApiResponse", "NovaAggregate",
+               "SshFailedLogins", "SystemDiskErrorsTooHigh"]
+        alerts = [i for i in grains.keys() if not any(ex in i for ex in exc)]
+        # Generate dict {Alertname: expression}
+        metrics_dict = {i: grains[i]["if"] for i in alerts}
+        # Generate dict {Alertname: [metrics]}
+        d = {i: filter_expr(metrics_dict[i]) for i in metrics_dict.keys()}
+        for alertname, metrics in d.items():
+            for m in metrics:
+                q = prometheus_api.get_query(m)
+                assert q and len(prometheus_api.get_query(m)) != 0, \
+                    "{} metric for {} alert not found for {} node".format(
+                        m, alertname, node)
