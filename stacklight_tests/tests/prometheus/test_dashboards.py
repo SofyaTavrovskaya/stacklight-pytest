@@ -51,6 +51,10 @@ ignored_queries_for_fail = [
     # Influxdb. We can have no stopped instances of influxdb
     'count(influxdb_up == 0)',
 
+    # Keepalived. Keepalived_state metric appears only after changing of status
+    'keepalived_state{host="$host"}',
+    'keepalived_state{host=~"$host"}',
+
     # Prometheus. Skip 1.x prometheus metric
     'prometheus_local_storage_target_heap_size_bytes'
     '{instance=~"$instance:[1-9][0-9]*"}',
@@ -197,7 +201,8 @@ def get_all_grafana_dashboards_names():
         "Heat": "heat",
         "InfluxDB": "influxdb",
         "InfluxDB Relay": "influxdb",
-        "Jenkins": "jenkins.client",
+        "Jenkins": "jenkins",
+        "Keepalived": "keepalived",
         "Keystone": "keystone",
         "Kibana": "kibana",
         "Kubernetes cluster monitoring": "kubernetes",
@@ -208,6 +213,7 @@ def get_all_grafana_dashboards_names():
         "Nova Instances": "nova",
         "Nova Utilization": "nova",
         "Openstack overview": "nova",
+        "Openstack tenants": "nova",
         "Ntp": "linux",
         "Nginx": "nginx",
         "OpenContrail Controller": "opencontrail",
