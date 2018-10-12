@@ -201,7 +201,7 @@ def get_all_grafana_dashboards_names():
         "Heat": "heat",
         "InfluxDB": "influxdb",
         "InfluxDB Relay": "influxdb",
-        "Jenkins": "jenkins",
+        "Jenkins": "system.jenkins.client",
         "Keepalived": "keepalived",
         "Keystone": "keystone",
         "Kibana": "kibana",
