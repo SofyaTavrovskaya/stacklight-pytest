@@ -13,6 +13,7 @@ pika>=0.10.0 # BSD License
 pyOpenSSL>=17.1.0
 pymongo
 pytest>=3.0.4  # MIT
+pytest-ordering
 pytest-rerunfailures
 python-ceilometerclient>=2.5.0  # Apache-2.0
 python-cinderclient>=3.3.0  # Apache-2.0

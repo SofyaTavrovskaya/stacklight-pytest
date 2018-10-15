@@ -21,6 +21,7 @@ fluentd_loggers = {
 @pytest.mark.parametrize(argnames="input_data",
                          argvalues=fluentd_loggers.values(),
                          ids=fluentd_loggers.keys())
+@pytest.mark.run(order=2)
 def test_fluentd_logs(es_client, salt_actions, input_data):
     pillar, logger = input_data
     if not salt_actions.ping("fluentd:agent", tgt_type="pillar"):

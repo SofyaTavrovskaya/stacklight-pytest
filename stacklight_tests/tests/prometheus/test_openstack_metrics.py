@@ -1,4 +1,5 @@
 import logging
+import pytest
 
 from stacklight_tests import settings
 from stacklight_tests import utils
@@ -22,6 +23,7 @@ class TestOpenstackMetrics(object):
             interval=30, timeout=5 * 60, timeout_msg=msg
         )
 
+    @pytest.mark.run(order=1)
     def test_glance_metrics(self, destructive, prometheus_api, os_clients):
         image_name = utils.rand_name("image-")
         client = os_clients.image
@@ -58,6 +60,7 @@ class TestOpenstackMetrics(object):
             lambda: (image.id not in [i["id"] for i in client.images.list()])
         )
 
+    @pytest.mark.run(order=1)
     def test_keystone_metrics(self, prometheus_api, os_clients):
         client = os_clients.auth
         tenants = client.projects.list()
@@ -98,6 +101,7 @@ class TestOpenstackMetrics(object):
                 prometheus_api, metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
+    @pytest.mark.run(order=1)
     def test_neutron_metrics(self, prometheus_api, os_clients):
         client = os_clients.network
 
@@ -128,6 +132,7 @@ class TestOpenstackMetrics(object):
                 prometheus_api, metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
+    @pytest.mark.run(order=1)
     def test_cinder_metrics(self, destructive, prometheus_api, os_clients):
         volume_name = utils.rand_name("volume-")
         expected_volume_status = settings.VOLUME_STATUS
@@ -162,6 +167,7 @@ class TestOpenstackMetrics(object):
             lambda: (volume.id not in [v.id for v in client.volumes.list()])
         )
 
+    @pytest.mark.run(order=1)
     def test_nova_telegraf_metrics(self, prometheus_api, os_clients):
         client = os_clients.compute
 
@@ -177,6 +183,7 @@ class TestOpenstackMetrics(object):
                 prometheus_api, q, get_servers_count(status.upper()),
                 err_msg.format(q))
 
+    @pytest.mark.run(order=1)
     def test_nova_services_metrics(self, prometheus_api, salt_actions):
         controllers = salt_actions.ping(
             "nova:controller:enabled:True", tgt_type="pillar")
