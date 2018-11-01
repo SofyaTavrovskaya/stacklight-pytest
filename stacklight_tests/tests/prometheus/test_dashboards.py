@@ -214,6 +214,7 @@ def get_all_grafana_dashboards_names():
         "Nova Utilization": "nova",
         "Openstack overview": "nova",
         "Openstack tenants": "nova",
+        "Octavia": "octavia",
         "Ntp": "linux",
         "Nginx": "nginx",
         "OpenContrail Controller": "opencontrail",
