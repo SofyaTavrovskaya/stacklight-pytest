@@ -93,8 +93,9 @@ class TestMetrics(object):
             pytest.skip("There are no kubernetes nodes in the cluster")
 
         metrics = [
-            'container_memory_cache', 'container_network_receive_bytes_total',
-            'container_tasks_state'
+            'kubernetes_build_info', 'kubernetes_node_memory_available_bytes',
+            'kubernetes_pod_container_memory_rss_bytes',
+            'kubernetes_system_container_rootfs_available_bytes'
         ]
 
         for metric in metrics:
