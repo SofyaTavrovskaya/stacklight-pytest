@@ -6,7 +6,6 @@ from stacklight_tests.clients import es_kibana_api
 from stacklight_tests.clients import grafana_api
 from stacklight_tests.clients.openstack import client_manager
 from stacklight_tests.clients import influxdb_api
-from stacklight_tests.clients import nagios_api
 from stacklight_tests.clients import salt_api
 from stacklight_tests.clients.prometheus import alertmanager_client
 from stacklight_tests.clients.prometheus import prometheus_client
@@ -50,18 +49,6 @@ def alerta_api(alerta_config):
                                            alerta_config["alerta_port"])
     client = Client(endpoint=endpoint, ssl_verify=False)
     return client
-
-
-@pytest.fixture(scope="session")
-def nagios_client(nagios_config):
-    nagios_api_client = nagios_api.NagiosApi(
-        address=nagios_config["nagios_vip"],
-        port=nagios_config["nagios_port"],
-        username=nagios_config["nagios_username"],
-        password=nagios_config["nagios_password"],
-        tls_enabled=nagios_config["nagios_tls"],
-    )
-    return nagios_api_client
 
 
 @pytest.fixture(scope="session")

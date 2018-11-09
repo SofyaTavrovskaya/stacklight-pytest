@@ -132,16 +132,6 @@ class MKConfig(object):
             "grafana_default_datasource": _client_param['datasource'].keys()[0]
         }
 
-    def generate_nagios_config(self):
-        _param = self.get_application_node("nagios")['parameters']['_param']
-        return {
-            "nagios_vip": _param['nagios_host'],
-            "nagios_port": 80,
-            "nagios_tls": False,
-            "nagios_username": _param['nagios_username'],
-            "nagios_password": _param['nagios_password'],
-        }
-
     def generate_keystone_config(self):
         _param = (
             self.get_application_node("keystone")['parameters']['keystone'])

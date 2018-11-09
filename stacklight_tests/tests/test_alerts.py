@@ -1,443 +1,278 @@
-from __future__ import print_function
-
-import contextlib
-import functools
 import logging
-import time
-
-import pika
 import pytest
 
-from stacklight_tests import custom_exceptions
-from stacklight_tests.tests import base_test
-
+from stacklight_tests import utils
 
 logger = logging.getLogger(__name__)
 
-
-rabbitmq_alarms = {
-    'memory': {
-        'warning': (base_test.BaseLMATest.RABBITMQ_MEMORY_WARNING_VALUE,
-                    base_test.BaseLMATest.WARNING_STATUS),
-        'critical': (base_test.BaseLMATest.RABBITMQ_MEMORY_CRITICAL_VALUE,
-                     base_test.BaseLMATest.CRITICAL_STATUS)
-    },
-    'disk': {
-        'warning': (base_test.BaseLMATest.RABBITMQ_DISK_WARNING_PERCENT,
-                    base_test.BaseLMATest.WARNING_STATUS),
-        'critical': (base_test.BaseLMATest.RABBITMQ_DISK_CRITICAL_PERCENT,
-                     base_test.BaseLMATest.CRITICAL_STATUS),
-    }
+service_down_entities = {
+    # format: {id_for_test: (service_to_stop, [filter(s)_for_nodes],
+    # count_of_nodes_to_stop_on, alertname, service_name_in_alert)}
+    "cinder_api_down":
+        ("cinder-api", ["service.cinder.control.cluster_control"], 3,
+         "CinderAPIDown", "cinder-api"),
+    "glance_api_down":
+        ("glance-api", ["service.glance.control.cluster"], 3,
+         "GlanceAPIDown", "glance-api"),
+    "neutron_api_down":
+        ("neutron-server", ["service.neutron.control.cluster"], 3,
+         "NeutronAPIDown", ""),
+    "nova_api_down": ("nova-api", ["system.nova.control.cluster"], 3,
+                      "NovaAPIDown", "nova-api"),
+    "apache_down": ("apache2", ["service.apache.server.single"], 3,
+                    "ApacheDown", "apache"),
+    "glusterfs_down": ("glusterfs-server", ["service.glusterfs.server"], 1,
+                       "GlusterFSDown", "glusterfs"),
+    "heat_api_down": ("heat-api", ["service.heat.server.cluster"], 3,
+                      "HeatAPIDown", "heat-api"),
+    "keystone_api_down": ("apache2", ["service.keystone.server.cluster"], 3,
+                          "KeystoneAPIDown", "keystone-public-api"),
+    "rabbitmq_down": ("rabbitmq-server", ["service.rabbitmq.server.cluster"],
+                      1, "RabbitMQDown", "rabbitmq"),
+    "nginx_down": ("nginx", ["service.nginx.server.single"], 1, "NginxDown",
+                   "nginx"),
+    "procstat_influxdb": ("influxdb", ["influxdb"], 1,
+                          "ProcstatRunningInfluxdb", "influxdb"),
+    "procstat_memcached": ("memcached", ["memcached"], 1,
+                           "ProcstatRunningMemcached", "memcached"),
+    "procstat_keepalived": ("keepalived", ["keepalived"], 1,
+                            "ProcstatRunningKeepalived", "keepalived"),
+    "procstat_kibana": ("kibana", ["kibana"], 1, "ProcstatRunningKibana",
+                        "kibana"),
+    "procstat_docker": ("docker", ["docker"], 1, "ProcstatRunningDockerd",
+                        "docker"),
+    "procstat_kube_proxy": ("kube-proxy", ["k8s_controller"], 1,
+                            "ProcstatRunningKubernetes", "kubernetes"),
+    "procstat_kube_apiserver": ("kube-apiserver", ["k8s_controller"], 1,
+                                "ProcstatRunningKubernetes", "kubernetes"),
+    "procstat_kube_controller_manager":
+        ("kube-controller-manager", ["k8s_controller"], 1,
+         "ProcstatRunningKubernetes", "kubernetes"),
+    "procstat_kubelet": ("kubelet", ["k8s_controller"], 1,
+                         "ProcstatRunningKubernetes", "kubernetes"),
+    "procstat_kube_scheduler": ("kube-scheduler", ["k8s_controller"], 1,
+                                "ProcstatRunningKubernetes", "kubernetes"),
+    "procstat_calico": ("calico-node", ["k8s_controller"], 1,
+                        "ProcstatRunningCalico", "calico"),
+    "etcd_cluster_small": ("etcd", ["k8s_controller"], 1, "EtcdClusterSmall",
+                           "etcd"),
+    "neutron_all_agents_down":
+        ("neutron-l3-agent",
+         ["system.neutron.compute.cluster", "service.neutron.gateway.single"],
+         3, "NeutronAllAgentsDown", "neutron-l3-agent"),
+    "neutron_only_one_agent_up":
+        ("neutron-metadata-agent",
+         ["system.neutron.compute.cluster", "service.neutron.gateway.single"],
+         2, "NeutronOnlyOneAgentUp", "neutron-metadata-agent"),
+    "neutron_some_agents_down":
+        ("neutron-openvswitch-agent",
+         ["system.neutron.compute.cluster", "service.neutron.gateway.single"],
+         1, "NeutronSomeAgentsDown", "neutron-openvswitch-agent"),
+    "nova_only_one_service_up": ("nova-cert", ["system.nova.control.cluster"],
+                                 2, "NovaOnlyOneServiceUp", "nova-cert"),
+    "nova_some_services_down":
+        ("nova-conductor", ["system.nova.control.cluster"], 1,
+         "NovaSomeServicesDown", "nova-conductor"),
+    "nova_all_services_down":
+        ("nova-scheduler", ["system.nova.control.cluster"], 3,
+         "NovaAllServicesDown", "nova-scheduler"),
+    "nova_all_computes_down": ("nova-compute", ["service.nova.compute.kvm"], 2,
+                               "NovaAllComputesDown", "nova-compute"),
+    "nova_some_computes_down": ("nova-compute", ["service.nova.compute.kvm"],
+                                1, "NovaSomeComputesDown", "nova-compute"),
+    "nova_libvirt_down": ("libvirt-bin", ["service.nova.compute.kvm"], 1,
+                          "NovaLibvirtDown", "libvirt"),
 }
 
-log_http_errors_entities = {
-    'nova':
-        ('nova', 'compute.servers.list', 'nova_logs', 'nova_api_http_errors'),
-    'keystone':
-        ('keystone', 'auth.users.list',
-         'keystone_logs',
-         'keystone_public_api_http_errors',
-         'keystone_admin_api_http_errors'),
-    'neutron':
-        ('neutron', 'network.list_networks',
-         'neutron_logs_control', 'neutron_api_http_errors'),
-    'cinder':
-        ('cinder', 'volume.volumes.list',
-         'cinder_logs', 'cinder_api_http_errors'),
-    'glance':
-        ('glance', 'image.images.list',
-         'glance_logs', 'glance_api_http_errors'),
-    'heat':
-        ('heat', 'orchestration.stacks.list',
-         'heat_logs', 'heat_api_http_errors'),
-}
 
+class TestPrometheusAlerts(object):
+    def test_system_load_alerts(self, cluster, prometheus_alerting):
+        def check_status(is_fired=True):
+            alert_names = ["SystemLoad5", "AvgCPUUsageIdle"]
+            for alert_name in alert_names:
+                criteria = {
+                    "name": alert_name,
+                    "host": compute.hostname,
+                }
+                prometheus_alerting.check_alert_status(
+                    criteria, is_fired=is_fired, timeout=6 * 60)
 
-def determinate_services():
-    services_checks = {
-        'libvirtd': 'libvirt_check',
-        'rabbitmq-server': 'rabbitmq_check',
-        'memcached': 'memcached_check',
-        'mysql': 'mysql_check'
-    }
+        load_processes_count = 20
 
-    return {service: (service, check)
-            for service, check in services_checks.items()}
+        # TODO(rpromyshlennikov): use ".get_random_compute" method
+        # instead of current filter after roles config of hosts will be fixed
+        compute = [host for host in cluster.hosts
+                   if host.fqdn.startswith("cmp")][0]
 
+        check_status(is_fired=False)
+        with compute.os.make_temporary_load(load_processes_count):
+            check_status()
+        check_status(is_fired=False)
 
-class TestAlerts(base_test.BaseLMATest):
-    @pytest.mark.parametrize(
-        "levels",
-        (rabbitmq_alarms["disk"].values()), ids=rabbitmq_alarms["disk"].keys())
-    def test_check_rabbitmq_disk_alarm(self, destructive, cluster,
-                                       influxdb_client, levels):
-        """Check that rabbitmq-disk-limit-warning and
-           rabbitmq-disk-limit-critical alarms work as expected.
+    def test_system_mem_alert(self, cluster, prometheus_alerting):
+        cmp = cluster.filter_by_role("compute")[0]
+        criteria = {
+            "name": "AvgMemAvailablePercent",
+            "service": "system",
+        }
+        cmp.os.apt_get_install_package("stress")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
+        memory = cmp.exec_command("grep MemFree /proc/meminfo")
+        _, memory, _ = memory.split()
+        memory = str(int(memory) * 0.99)
+        command = "nohup stress --vm-bytes " + memory + "k --vm-keep -m 1" \
+                  " --timeout 600 &"
+        cmp.exec_command(command)
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=10 * 60)
+        cmp.os.apt_get_remove_package("stress")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
 
-        Scenario:
-            1. Check the last value of the okay alarm in InfluxDB.
-            2. Set RabbitMQ disk limit to 99.99 percent of available space.
-            3. Check the last value of the warning alarm in InfluxDB.
-            4. Set RabbitMQ disk limit to the default value.
-            5. Check the last value of the okay alarm in InfluxDB.
-            6. Set RabbitMQ disk limit to 100 percent of available space.
-            7. Check the last value of the critical alarm in InfluxDB.
-            8. Set RabbitMQ disk limit to the default value.
-            9. Check the last value of the okay alarm in InfluxDB.
+    def test_predict_linear_disk_inodes_free_alert(
+            self, cluster, prometheus_alerting):
+        cmp = cluster.filter_by_role("compute")[0]
+        criteria = {
+            "name": "PredictLinearDiskInodesFree",
+            "service": "system",
+        }
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
+        cmp.exec_command("cd /dev/shm; for i in {1..4}; "
+                         "do touch {$i}a{000001..100000}.c; done")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=10 * 60)
+        remove_files = "cd /dev/shm; find . -name '*.c' -print0 | xargs -0 rm"
+        cmp.exec_command(remove_files)
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=15 * 60)
 
-        Duration 10m
-        """
-        controller = cluster.get_random_controller()
-        percent, status = levels
+    def test_system_predict_linear_disk_free_alert(self, cluster,
+                                                   prometheus_alerting):
+        cmp = cluster.filter_by_role("compute")[0]
+        criteria = {
+            "name": "PredictLinearDiskFree",
+            "service": "system",
+        }
+        cmp.os.apt_get_install_package("stress")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
+        command = "cd /dev/shm; nohup stress -d 2 --timeout 480s &"
+        cmp.exec_command(command)
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=10 * 60)
+        cmp.os.apt_get_remove_package("stress")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=15 * 60)
 
-        volume = "/dev/vda"
-        source = "rabbitmq_server_disk"
-        check_alarm = functools.partial(
-            influxdb_client.check_mk_alarm,
-            member=source,
-            hostname=controller.hostname
+    def test_influxdb_httpclient_error_alert(
+            self, cluster, prometheus_alerting):
+        infl_node = cluster.filter_by_role("influxdb")[0]
+        criteria = {
+            "name": "InfluxdbHTTPClientError",
+            "service": "influxdb",
+        }
+        prometheus_alerting.check_alert_status(criteria, is_fired=False)
+        command = (
+            "for i in {1..6000}; do influx -host " + str(infl_node.address) +
+            " -port 8086 -database lma -username lma -password lmapass "
+            "execute 'show tables' &>/dev/null; done"
         )
-
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-        default_value = controller.check_call(
-            "rabbitmqctl environment | grep disk_free_limit | "
-            "sed -r 's/}.+//' | sed 's|.*,||'")[1]
-
-        destructive.append(lambda: controller.check_call(
-            "rabbitmqctl set_disk_free_limit {}".format(default_value)))
-        cmd = ("rabbitmqctl set_disk_free_limit $"
-               "(df | grep {volume} | "
-               "awk '{{ printf(\"%.0f\\n\", 1024 * ((($3 + $4) * "
-               "{percent} / 100) - $3))}}')")
-        controller.check_call(cmd.format(volume=volume, percent=percent))
-
-        check_alarm(warning_level=status)
-
-        controller.check_call(
-            "rabbitmqctl set_disk_free_limit {}".format(default_value))
-
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-    @pytest.mark.parametrize(
-        "levels",
-        (rabbitmq_alarms["memory"].values()),
-        ids=rabbitmq_alarms["memory"].keys())
-    def test_check_rabbitmq_memory_alarm(self, destructive, cluster,
-                                         influxdb_client, levels):
-        """Check that rabbitmq-memory-limit-warning and
-           rabbitmq-memory-limit-critical alarms work as expected.
-
-        Scenario:
-            1. Check the last value of the okay alarm in InfluxDB.
-            2. Set RabbitMQ memory limit to 101 percent of currently
-            used memory.
-            3. Check the last value of the warning alarm in InfluxDB.
-            4. Set RabbitMQ memory limit to the default value.
-            5. Check the last value of the okay alarm in InfluxDB.
-            6. Set RabbitMQ memory limit to 100.01 percent of currently
-            used memory.
-            7. Check the last value of the critical alarm in InfluxDB.
-            8. Set RabbitMQ memory limit to the default value.
-            9. Check the last value of the okay alarm in InfluxDB.
-
-        Duration 10m
-        """
-        controller = cluster.get_random_controller()
-        ratio, status = levels
-
-        source = "rabbitmq_server_memory"
-        check_alarm = functools.partial(
-            influxdb_client.check_mk_alarm,
-            member=source,
-            hostname=controller.hostname
-        )
-
-        check_alarm(warning_level=self.OKAY_STATUS)
-        default_value = controller.check_call(
-            "rabbitmqctl environment | grep vm_memory_high_watermark, | "
-            "sed -r 's/}.+//' | sed 's|.*,||'")[1]
-        mem_usage = influxdb_client.get_rabbitmq_memory_usage(controller)
-
-        cmd = (
-            'rabbitmqctl '
-            'set_vm_memory_high_watermark absolute "{memory}"'.format(
-                memory=int(mem_usage * ratio),
-            ))
-        destructive.append(
-            lambda: controller.os.check_call(
-                "rabbitmqctl set_vm_memory_high_watermark {}".format(
-                    default_value)))
-        controller.check_call(cmd)
-        check_alarm(warning_level=status)
-
-        controller.os.check_call(
-            "rabbitmqctl set_vm_memory_high_watermark {}".format(default_value)
-        )
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-    def test_check_root_fs_alarms(self, cluster, influxdb_client):
-        """Check that root-fs-warning and root-fs-critical alarms work as
-           expected.
-
-        Scenario:
-            1. Fill up root filesystem to 91 percent.
-            2. Check the last value of the warning alarm in InfluxDB.
-            3. Clean the filesystem.
-            4. Fill up root filesystem to 96 percent.
-            5. Check the last value of the critical alarm in InfluxDB.
-            6. Clean the filesystem.
-
-        Duration 10m
-        """
-        compute = cluster.get_random_compute()
-        alarm_name = "linux_system_root_fs"
-        filename = "/bigfile"
-        filesystem = "/$"
-
-        check_alarm = functools.partial(
-            influxdb_client.check_mk_alarm,
-            member=alarm_name,
-            hostname=compute.hostname
-        )
-
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-        compute.os.fill_up_filesystem(
-            filesystem, self.WARNING_PERCENT, filename)
-        logger.info("Checking {}-warning alarm".format(alarm_name))
-        check_alarm(warning_level=self.WARNING_STATUS)
-
-        compute.os.clean_filesystem(filename)
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-        compute.os.fill_up_filesystem(
-            filesystem, self.CRITICAL_PERCENT, filename)
-        logger.info("Checking {}-critical alarm".format(alarm_name))
-        check_alarm(warning_level=self.CRITICAL_STATUS)
-
-        compute.os.clean_filesystem(filename)
-        check_alarm(warning_level=self.OKAY_STATUS)
-
-    @contextlib.contextmanager
-    def make_logical_db_unavailable(self, db_name, controller, mysql_config):
-        """Context manager that renames all tables in provided database
-           to make it unavailable and renames it back on exit.
-
-        :param db_name: logical database name
-        :type db_name: str
-        :param controller: controller with MySQL database
-        :type controller: nailgun node
-        :returns: None, works as context manager
-        """
-        user = mysql_config['mysql'].get('mysql_user', '')
-        password = mysql_config['mysql'].get('mysql_password', '')
-        creds = '-u{user}  -p{password}'.format(user=user, password=password)
-        cmd = (
-            "mysql -AN {creds} -e "
-            "\"select concat("
-            "'rename table {db_name}.', table_name, ' "
-            "to {db_name}.' , {method}(table_name) , ';') "
-            "from information_schema.tables "
-            "where table_schema = '{db_name}';"
-            "\" | mysql {creds} ")
-
-        controller.os.check_call(
-            cmd.format(db_name=db_name, method='upper', creds=creds))
-        try:
-            yield
-        finally:
-            controller.os.check_call(
-                cmd.format(db_name=db_name, method='lower', creds=creds))
-
-    @pytest.mark.check_env('is_mk')
-    @pytest.mark.parametrize(
-        "entities",
-        log_http_errors_entities.values(), ids=log_http_errors_entities.keys())
-    def test_logs_and_http_errors_alarms(self, cluster, os_clients,
-                                         influxdb_client, mysql_config,
-                                         entities):
-        """Check that nova-logs and nova-api-http-errors alarms work as
-           expected.
-
-        Scenario:
-            1. Check that the last value of the service-logs
-               alarm in InfluxDB is OK.
-            2. Check that the last value of the service-api-http-errors alarm
-               in InfluxDB is OK.
-            3. Rename all service tables to UPPERCASE in DB.
-            4. Check the last value of the service-logs
-               alarm in InfluxDB is WARN.
-            5. Check the last value of the service-api-http-errors alarm
-               in InfluxDB is WARN.
-            6. Revert all service tables names to lowercase.
-            7. Check the last value of the service-logs alarm
-               in InfluxDB is OK.
-            8. Check the last value of the service-api-http-errors alarm
-               in InfluxDB is OK.
-
-        Duration 10m
-        """
-        controller = cluster.filter_by_role("galera.master")[0]
-        db_name = entities[0]
-        method = entities[1]
-        alarm_entities = entities[2:]
-        results = {}
-        # Pre-check that alarms are not triggered
-        for alarm in alarm_entities:
-            res = influxdb_client.check_mk_alarm(alarm, self.OKAY_STATUS,
-                                                 reraise=False)
-            results["pre_check_{}".format(alarm)] = res.status
-
-        # Every service is doing some heartbeats/checks,
-        # so it is guaranteed to get into failing state
-        checked_hosts = {}
-
-        # Determining provoke method
-        curr_attr = os_clients
-        for attr in method.split("."):
-            curr_attr = getattr(curr_attr, attr)
-        with self.make_logical_db_unavailable(
-                db_name, controller, mysql_config):
-            # Run provoke method several times
-            for _ in range(20):
-                # List conversion is needed by heat and glance list cmd,
-                # because it returns generator
-                try:
-                    list(curr_attr())
-                except Exception:
-                    # we passing all client errors, because they are expected
-                    pass
-            for alarm in alarm_entities:
-                res = influxdb_client.check_mk_alarm(
-                    alarm, self.WARNING_STATUS, reraise=False)
-                results["check_{}".format(alarm)] = res.status
-                checked_hosts[alarm] = res.host
-
-        # Post-check that alarms returned in OK state
-        for alarm in alarm_entities:
-            res = influxdb_client.check_mk_alarm(
-                alarm, self.OKAY_STATUS, checked_hosts[alarm], reraise=False)
-            results["post_check_{}".format(alarm)] = res.status
-        failed_checks = {key for key, value in results.items() if not value}
-        assert not failed_checks, (
-            "Checks failed: {}".format(", ".join(failed_checks)))
+        infl_node.exec_command(command)
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=6 * 60)
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=6 * 60)
 
     @pytest.mark.parametrize(
-        "entities",
-        determinate_services().values(),
-        ids=determinate_services().keys())
-    def test_services_alarms(self, destructive, cluster,
-                             influxdb_client, entities):
-        """Check sanity services alarms.
-
-        Scenario:
-            1. Connect to the node where the service from the list
-               below is started:
-                 * libvirt
-                 * rabbitmq-server
-                 * memcached
-                 * mysql
-               and stop the service.
-            2. Check that <service-name>-check value is operating.
-            3. Stop service and check that the corresponding
-               <service-name>-check alarm is triggered.
-            4. Start the service resource and check that value is operating.
-        """
-        status_operating = 1
-        status_down = 0
-
-        def find_server(some_service):
-            if service == 'apache2':
-                return cluster.get_random_controller()
-            server = None
-            for cluster_host in cluster.hosts:
-                if cluster_host.hostname.startswith('prx'):
-                    continue
-                try:
-                    res = cluster_host.os.transport.exec_sync(
-                        'pgrep {service}'.format(service=some_service))
-                except Exception:
-                    continue
-                if res[0] == 0:
-                    server = cluster_host
-                    break
-            if server is None:
-                raise custom_exceptions.NoValidHost('')
-            return server
-
-        service, check = entities
-        host = find_server(service)
-        influxdb_client.check_status(check, host.hostname, status_operating)
-        destructive.append(lambda: host.os.manage_service(service, "start"))
-        if service == 'rabbitmq-server':
+        "entities", service_down_entities.values(),
+        ids=service_down_entities.keys())
+    def test_service_down_alerts(self, cluster, destructive,
+                                 prometheus_alerting, entities):
+        service = entities[0]
+        roles = entities[1]
+        target_nodes = []
+        for role in roles:
+            target_nodes.extend(cluster.filter_by_role(role))
+        if not target_nodes:
+            pytest.skip("No nodes with {} role(s) found".format(
+                ', '.join([role for role in roles])))
+        target_nodes = target_nodes[:entities[2]]
+        criteria = {
+            "name": entities[3],
+            "service": entities[4],
+        }
+        prometheus_alerting.check_alert_status(criteria, is_fired=False)
+        logger.info("Stop {} service on {} node(s)".format(
+            service, ', '.join([str(n.hostname) for n in target_nodes])))
+        for node in target_nodes:
             destructive.append(
-                lambda: host.os.check_call('rabbitmqctl force_boot'))
-        host.os.manage_service(service, "stop")
-        influxdb_client.check_status(check, host.hostname, status_down)
-        if service == 'rabbitmq-server':
-            host.os.check_call('rabbitmqctl force_boot')
-        host.os.manage_service(service, "start")
-        influxdb_client.check_status(check, host.hostname, status_operating)
+                lambda: node.os.manage_service(service, "start"))
+            node.os.manage_service(service, "stop")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=10 * 60)
+        logger.info("Start {} service on {} node(s)".format(
+            service, ', '.join([str(n.hostname) for n in target_nodes])))
+        for node in target_nodes:
+            node.os.manage_service(service, "start")
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
 
-    @pytest.mark.check_env('is_mk')
-    def test_rabbitmq_pacemaker_alarms(self, destructive, cluster,
-                                       influxdb_client):
-        """Check that rabbitmq-pacemaker-* alarms work as expected.
+    def test_nova_aggregates_memory(self, prometheus_api, prometheus_alerting,
+                                    os_clients, os_actions, destructive):
+        def get_agg_free_ram(a_n, a_id):
+            def _get_current_value(q):
+                try:
+                    v = prometheus_api.get_query(q)[0]["value"][1]
+                except IndexError:
+                    v = 0
+                return v
+            query = ('openstack_nova_aggregate_free_ram{aggregate="' + a_n +
+                     '",aggregate_id="' + str(a_id) + '"}')
+            utils.wait(lambda: _get_current_value(query) != 0,
+                       interval=10, timeout=2 * 60)
+            return _get_current_value(query)
 
-        Scenario:
-            1. Stop one slave RabbitMQ instance.
-            2. Check that the status of the RabbitMQ cluster is warning.
-            3. Stop the second slave RabbitMQ instance.
-            4. Check that the status of the RabbitMQ cluster is critical.
-            5. Stop the master RabbitMQ instance.
-            6. Check that the status of the RabbitMQ cluster is down.
-            7. Clear the RabbitMQ resource.
-            8. Check that the status of the RabbitMQ cluster is okay.
-
-        Duration 10m
-        """
-        check_status = functools.partial(
-            influxdb_client.check_cluster_status,
-            name="rabbitmq", interval="10s")
-
-        controllers = cluster.get_controllers()[:3]
-        statuses = (
-            self.WARNING_STATUS, self.CRITICAL_STATUS, self.DOWN_STATUS)
-        service = 'rabbitmq-server'
-
-        check_status(expected_status=self.OKAY_STATUS)
-
-        for ctl, status in zip(controllers, statuses):
-            destructive.append(lambda: ctl.os.manage_service(service, 'start'))
-            destructive.append(
-                lambda: ctl.os.check_call('rabbitmqctl force_boot'))
-            ctl.os.manage_service(service, 'stop')
-            check_status(expected_status=status)
-
-        for ctl in controllers:
-            ctl.os.transport.check_call('rabbitmqctl force_boot')
-            ctl.os.manage_service(service, 'start')
-            time.sleep(10)
-
-        check_status(expected_status=self.OKAY_STATUS)
-
-    @pytest.mark.check_env('is_mk')
-    def test_rabbit_queue(self, cluster, influxdb_client):
-        influxdb_client.check_mk_alarm(
-            'rabbitmq_server_queue', self.OKAY_STATUS)
-        controller = cluster.get_random_controller()
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=controller.hostname))
-        channel = connection.channel()
-
-        channel.queue_declare(queue='test_rabbit_queue')
-        for i in range(500):
-            channel.basic_publish(exchange='',
-                                  routing_key='test_rabbit_queue',
-                                  body='test_rabbit_queue')
-        connection.close()
-        influxdb_client.check_mk_alarm(
-            'rabbitmq_server_queue', self.WARNING_STATUS)
-        influxdb_client.check_mk_alarm(
-            'rabbitmq_server_queue', self.OKAY_STATUS)
+        client = os_clients.compute
+        aggr_name = "test-aggr"
+        az = "test-az"
+        host = "cmp01"
+        aggr = client.aggregates.create(aggr_name, az)
+        client.aggregates.add_host(aggr, host)
+        destructive.append(lambda: client.aggregates.remove_host(
+            aggr, host))
+        destructive.append(lambda: client.aggregates.delete(aggr.id))
+        criteria = {
+            "name": "NovaAggregatesFreeMemoryLow"
+        }
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
+        free_ram = get_agg_free_ram(aggr_name, aggr.id)
+        image = os_actions.get_cirros_image()
+        flavor = os_actions.create_flavor(
+            name="test_flavor", ram=int(free_ram) - 100)
+        destructive.append(lambda: client.flavors.delete(flavor))
+        tenant_id = os_actions.get_admin_tenant().id
+        net = os_actions.create_network(tenant_id)
+        subnet = os_actions.create_subnet(net, tenant_id, "192.168.100.0/24")
+        server = os_actions.create_basic_server(image, flavor, net,
+                                                availability_zone=az)
+        destructive.append(lambda: client.servers.delete(server))
+        destructive.append(lambda: os_clients.network.delete_subnet(
+            subnet['id']))
+        destructive.append(lambda: os_clients.network.delete_network(
+            net['id']))
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=True, timeout=10 * 60)
+        client.servers.delete(server)
+        utils.wait(
+            lambda: (server.id not in [s.id for s in client.servers.list()])
+        )
+        prometheus_alerting.check_alert_status(
+            criteria, is_fired=False, timeout=10 * 60)
+        os_clients.network.delete_subnet(subnet['id'])
+        os_clients.network.delete_network(net['id'])
+        client.flavors.delete(flavor)
+        client.aggregates.remove_host(aggr, host)
+        client.aggregates.delete(aggr.id)

@@ -3,7 +3,6 @@ import pytest
 
 from stacklight_tests import settings
 from stacklight_tests import utils
-from stacklight_tests.tests.test_functional import wait_for_resource_status
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class TestOpenstackMetrics(object):
             disk_format="raw",
             visibility="public")
         client.images.upload(image.id, "dummy_data")
-        wait_for_resource_status(client.images, image.id, "active")
+        utils.wait_for_resource_status(client.images, image.id, "active")
         destructive.append(lambda: client.images.delete(image.id))
         filter = {"visibility": "public"}
 
@@ -122,8 +121,8 @@ class TestOpenstackMetrics(object):
         expected_volume_status = settings.VOLUME_STATUS
         client = os_clients.volume
         volume = client.volumes.create(size=1, name=volume_name)
-        wait_for_resource_status(client.volumes, volume.id,
-                                 expected_volume_status)
+        utils.wait_for_resource_status(client.volumes, volume.id,
+                                       expected_volume_status)
         destructive.append(lambda: client.volume.delete(volume))
         filter = {'status': expected_volume_status, 'all_tenants': 1}
 

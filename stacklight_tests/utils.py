@@ -120,3 +120,16 @@ def parse_time_rfc_3339(timestamp):
     except ValueError:
         result = dt.datetime.strptime(timestamp, dt_fallback_format)
     return result
+
+
+def wait_for_resource_status(resource_client, resource,
+                             expected_status, timeout=180,
+                             interval=10):
+    msg = "Timed out waiting to become {}".format(expected_status)
+    wait(
+        (lambda:
+         resource_client.get(resource).status == expected_status),
+        interval=interval,
+        timeout=timeout,
+        timeout_msg=msg
+    )

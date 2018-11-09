@@ -13,7 +13,7 @@ def test_influxdb_installed(salt_actions, influxdb_client):
     salt_actions.check_service_installed(service, target, tgt_type="pillar")
     salt_actions.check_service_running(service, target, tgt_type="pillar")
     if salt_actions.ping("I@prometheus:relay"):
-        node = salt_actions.ping(target, expr_form="pillar")[0]
+        node = salt_actions.ping(target, tgt_type="pillar")[0]
         password = salt_actions.get_pillar_item(
             node, "_param:influxdb_admin_password")[0]
         influxdb_client.check_influxdb_online(
