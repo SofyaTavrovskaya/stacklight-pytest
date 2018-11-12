@@ -65,8 +65,6 @@ class TestOpenstackMetrics(object):
         client = os_clients.auth
         tenants = client.projects.list()
         users = client.users.list()
-        # Hack for users with non default domain_id:
-        users = [user for user in users if user.domain_id == "default"]
 
         metric_dict = {
             '{__name__="openstack_keystone_tenants_total"}':
