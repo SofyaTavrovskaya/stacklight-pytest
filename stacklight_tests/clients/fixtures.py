@@ -108,7 +108,10 @@ def kibana_client(elasticsearch_config):
 
 @pytest.fixture(scope="session")
 def os_clients(keystone_config):
-    auth_url = "http://{}:5000/".format(keystone_config["private_address"])
+    auth_url = "{}://{}:{}/".format(
+        keystone_config["private_protocol"],
+        keystone_config["private_address"],
+        keystone_config["private_port"])
     openstack_clients = client_manager.OfficialClientManager(
         username=keystone_config["admin_name"],
         password=keystone_config["admin_password"],

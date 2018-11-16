@@ -151,6 +151,8 @@ class MKConfig(object):
             "admin_tenant": _param['server']['admin_tenant'],
             "private_address": _param['server']['bind']['private_address'],
             "public_address": _param['server']['bind']['public_address'],
+            "private_protocol": _param['server']['bind']['private_protocol'],
+            "private_port": _param['server']['bind']['private_port'],
         }
 
     def generate_mysql_config(self):
