@@ -1,7 +1,11 @@
 import json
+import logging
 import re
 
+from stacklight_tests import utils
 from stacklight_tests.clients import http_client
+
+logger = logging.getLogger(__name__)
 
 
 class PrometheusClient(http_client.HttpClient):
@@ -130,6 +134,22 @@ class PrometheusClient(http_client.HttpClient):
         for measurement in self.get_all_measurements():
             if measurement in query:
                 return measurement
+
+    def check_metric_values(self, query, value, msg=None):
+        def _verify_notifications(q, v):
+            output = self.get_query(q)
+            logger.info("Check '{}' value in {} metric values".format(
+                v, output))
+            if not output:
+                logger.error('Empty results received, '
+                             'check a query {0}'.format(q))
+                return False
+            return v in output[0]["value"]
+        msg = msg if msg else 'Incorrect value in metric {}'.format(query)
+        utils.wait(
+            lambda: _verify_notifications(query, str(value)),
+            interval=30, timeout=5 * 60, timeout_msg=msg
+        )
 
 
 def get_prometheus_client_from_config(config):

@@ -9,20 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestOpenstackMetrics(object):
-    def check_openstack_metrics(self, prometheus_api, query, value, msg):
-        def _verify_notifications(q, v):
-            output = prometheus_api.get_query(q)
-            logger.info("Check {} in {}".format(v, output))
-            if not output:
-                logger.error('Empty results received, '
-                             'check a query {0}'.format(q))
-                return False
-            return v in output[0]["value"]
-        utils.wait(
-            lambda: _verify_notifications(query, str(value)),
-            interval=30, timeout=5 * 60, timeout_msg=msg
-        )
-
     @pytest.mark.run(order=1)
     def test_glance_metrics(self, destructive, prometheus_api, os_clients):
         image_name = utils.rand_name("image-")
@@ -46,14 +32,14 @@ class TestOpenstackMetrics(object):
                        'visibility="public",status="active"}')
         err_count_msg = "Incorrect image count in metric {}".format(
             count_query)
-        self.check_openstack_metrics(
-            prometheus_api, count_query, images_count, err_count_msg)
+        prometheus_api.check_metric_values(
+            count_query, images_count, err_count_msg)
 
         size_query = ('{__name__="openstack_glance_images_size",'
                       'visibility="public", status="active"}')
         error_size_msg = "Incorrect image size in metric {}".format(size_query)
-        self.check_openstack_metrics(
-            prometheus_api, size_query, images_size, error_size_msg)
+        prometheus_api.check_metric_values(
+            size_query, images_size, error_size_msg)
 
         client.images.delete(image.id)
         utils.wait(
@@ -95,8 +81,8 @@ class TestOpenstackMetrics(object):
         }
 
         for metric in metric_dict.keys():
-            self.check_openstack_metrics(
-                prometheus_api, metric, metric_dict[metric][0],
+            prometheus_api.check_metric_values(
+                metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
     @pytest.mark.run(order=1)
@@ -126,8 +112,8 @@ class TestOpenstackMetrics(object):
         }
 
         for metric in metric_dict.keys():
-            self.check_openstack_metrics(
-                prometheus_api, metric, metric_dict[metric][0],
+            prometheus_api.check_metric_values(
+                metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
     @pytest.mark.run(order=1)
@@ -150,15 +136,15 @@ class TestOpenstackMetrics(object):
                        'status="{0}"}}'.format(expected_volume_status))
         err_count_msg = "Incorrect volume count in metric {}".format(
             count_query)
-        self.check_openstack_metrics(
-            prometheus_api, count_query, volumes_count, err_count_msg)
+        prometheus_api.check_metric_values(
+            count_query, volumes_count, err_count_msg)
 
         size_query = ('{{__name__="openstack_cinder_volumes_size",'
                       'status="{0}"}}'.format(expected_volume_status))
         error_size_msg = "Incorrect volume size in metric {}".format(
             size_query)
-        self.check_openstack_metrics(
-            prometheus_api, size_query, volumes_size, error_size_msg)
+        prometheus_api.check_metric_values(
+            size_query, volumes_size, error_size_msg)
 
         client.volumes.delete(volume)
         utils.wait(
@@ -177,34 +163,29 @@ class TestOpenstackMetrics(object):
         for status in ["active", "error"]:
             q = 'openstack_nova_instances{' + 'state="{}"'.format(
                 status) + '}'
-            self.check_openstack_metrics(
-                prometheus_api, q, get_servers_count(status.upper()),
-                err_msg.format(q))
+            prometheus_api.check_metric_values(
+                q, get_servers_count(status.upper()), err_msg.format(q))
 
     @pytest.mark.run(order=1)
     def test_nova_services_metrics(self, prometheus_api, salt_actions):
         controllers = salt_actions.ping(
-            "nova:controller:enabled:True", tgt_type="pillar")
+            "nova:controller:enabled:True", tgt_type="pillar", short=True)
         computes = salt_actions.ping(
-            "nova:compute:enabled:True", tgt_type="pillar")
+            "nova:compute:enabled:True", tgt_type="pillar", short=True)
         controller_services = ["nova-conductor", "nova-consoleauth",
                                "nova-scheduler"]
         compute_services = ["nova-compute"]
         err_service_msg = "Service {} is down on the {} node"
         for controller in controllers:
             for service in controller_services:
-                q = 'hostname="{}",service="{}"'.format(
-                    controller.split(".")[0], service)
-                self.check_openstack_metrics(
-                    prometheus_api,
+                q = 'hostname="{}",service="{}"'.format(controller, service)
+                prometheus_api.check_metric_values(
                     'openstack_nova_service{' + q + '}',
                     0,
-                    err_service_msg.format(service, controller.split(".")[0]))
+                    err_service_msg.format(service, controller))
         for compute in computes:
             for service in compute_services:
-                q = 'hostname="{}",service="{}"'.format(
-                    compute.split(".")[0], service)
-                self.check_openstack_metrics(
-                    prometheus_api,
+                q = 'hostname="{}",service="{}"'.format(compute, service)
+                prometheus_api.check_metric_values(
                     'openstack_nova_service{' + q + '}',
-                    0, err_service_msg.format(service, compute.split(".")[0]))
+                    0, err_service_msg.format(service, compute))
