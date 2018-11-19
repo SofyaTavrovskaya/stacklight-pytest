@@ -189,3 +189,38 @@ class TestOpenstackMetrics(object):
                 prometheus_api.check_metric_values(
                     'openstack_nova_service{' + q + '}',
                     0, err_service_msg.format(service, compute))
+
+    def test_http_response_metrics(self, prometheus_api, salt_actions):
+        nodes = salt_actions.ping("I@nova:controller")
+        if not nodes:
+            pytest.skip("Openstack is not installed in the cluster")
+        # TODO(vgusev): Extend test with opencontrail services
+        services = salt_actions.get_grains(
+            nodes[0], 'telegraf:agent:input:http_response').values()[0].keys()
+        for service in services:
+            for node in nodes:
+                host = node.split(".")[0]
+                q = 'http_response_status{{name="{}", host="{}"}}'.format(
+                    service, host)
+                output = prometheus_api.get_query(q)
+                logger.info("Waiting to get metric {}".format(q))
+                msg = "Metric {} not found".format(q)
+                assert len(output) != 0, msg
+                prometheus_api.check_metric_values(q, 1)
+
+    def test_openstack_api_check_status_metrics(self, prometheus_api,
+                                                salt_actions):
+        nodes = salt_actions.ping("I@nova:controller")
+        if not nodes:
+            pytest.skip("Openstack is not installed in the cluster")
+        metrics = prometheus_api.get_query('openstack_api_check_status')
+        logger.info("openstack_api_check_status metrics list: {}".format(
+            metrics))
+        msg = 'There are no openstack_api_check_status metrics'
+        assert len(metrics) != 0, msg
+        # TODO(vgusev): Refactor test after changes in telegraf are done
+        for metric in metrics:
+            logger.info("Check value '1' for service {}".format(
+                metric['metric']['name']))
+            msg = 'Incorrect value in metric {}'.format(metric)
+            assert '1' in metric['value'], msg
