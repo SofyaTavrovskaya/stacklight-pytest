@@ -2,8 +2,6 @@ import logging
 import pytest
 import os
 
-from stacklight_tests import utils
-
 logger = logging.getLogger(__name__)
 
 
@@ -34,19 +32,10 @@ class TestMetrics(object):
                    'kernel_interrupts', 'kernel_processes_forked']
     }
 
-    def verify_notifications(self, prometheus_api, expected_list, query):
-            output = prometheus_api.get_query(query)
-            got_metrics = set([metric["metric"]["__name__"]
-                               for metric in output])
-            delta = set(expected_list) - got_metrics
-            if delta:
-                logger.info("{} metric(s) not found in {}".format(
-                    delta, got_metrics))
-                return False
-            return True
-
     def test_etcd_metrics(self, salt_actions, prometheus_api):
         nodes = salt_actions.ping("services:etcd", tgt_type="grain")
+        if not nodes:
+            pytest.skip("Etcd is not installed in the cluster")
         expected_hostnames = [
             salt_actions.get_pillar_item(node, "etcd:server:bind:host")[0]
             for node in nodes]
@@ -57,9 +46,7 @@ class TestMetrics(object):
         assert set(expected_hostnames) == set(hostnames)
 
     def test_telegraf_metrics(self, prometheus_api, salt_actions):
-        nodes = salt_actions.ping()
-        expected_hostnames = [node.split(".")[0] for node in nodes]
-
+        expected_hostnames = salt_actions.ping(short=True)
         metrics = prometheus_api.get_query("system_uptime")
         hostnames = [metric["metric"]["host"] for metric in metrics]
         assert set(expected_hostnames) == set(hostnames)
@@ -72,19 +59,17 @@ class TestMetrics(object):
                              ids=target_metrics.keys())
     def test_system_metrics(self, prometheus_api, salt_actions,
                             target, metrics):
-        nodes = salt_actions.ping()
-        expected_hostnames = [node.split(".")[0] for node in nodes]
+        expected_hostnames = salt_actions.ping(short=True)
         for hostname in expected_hostnames:
             if "SKIP_NODES" in os.environ.keys():
                 if hostname in os.environ['SKIP_NODES']:
                     print "Skip {}".format(hostname)
                     continue
-            q = ('{{__name__=~"^{}.*", host="{}"}}'.format(target, hostname))
-            logger.info("Waiting to get all metrics")
-            msg = "Timed out waiting to get all metrics"
-            utils.wait(
-                lambda: self.verify_notifications(prometheus_api, metrics, q),
-                timeout=5 * 60, interval=10, timeout_msg=msg)
+            for metric in metrics:
+                q = ('{}{{host="{}"}}'.format(metric, hostname))
+                msg = "Metric {} not found".format(q)
+                output = prometheus_api.get_query(q)
+                assert len(output) != 0, msg
 
     def test_k8s_metrics(self, salt_actions, prometheus_api):
         nodes = salt_actions.ping("services:kubernetes", tgt_type="grain")
@@ -154,3 +139,55 @@ class TestMetrics(object):
                 err_msg = ("Metric {} not found in received list of mysql "
                            "metrics on {} node".format(metric, hostname))
                 assert metric in got_metrics, err_msg
+
+    def test_prometheus_targets(self, salt_actions, prometheus_api):
+        def get_replicas_count(stack, service):
+            tgt = "I@docker:swarm and I@prometheus:server"
+            replica = ('docker:client:stack:{}:service:{}:'
+                       'deploy:replicas'.format(stack, service))
+            mode = ('docker:client:stack:{}:service:{}:'
+                    'deploy:mode'.format(stack, service))
+            count = salt_actions.get_pillar_item(tgt, replica)
+            if (not count and salt_actions.get_pillar_item(
+                    tgt, mode) == ['global']):
+                count = [len(salt_actions.ping(tgt))]
+            return count
+
+        target_dict = {}
+        mapping = {
+            'alertmanager': ['monitoring', 'alertmanager'],
+            'prometheus': ['monitoring', 'server'],
+            'remote_agent': ['monitoring', 'remote_agent'],
+            'remote_agent_openstack': ['monitoring', 'remote_agent'],
+            'pushgateway': ['monitoring', 'pushgateway'],
+            'grafana': ['dashboard', 'grafana']
+        }
+        for service, pillar in mapping.items():
+            target_dict[service] = get_replicas_count(pillar[0], pillar[1])[0]
+
+        for target, count in target_dict.items():
+            q = 'up{{job="{}"}}'.format(target)
+            output = prometheus_api.get_query(q)
+            logger.info('Got {} metrics for {} query'.format(output, q))
+            msg = ('Incorrect count of metrics for {} target. '
+                   'Received list {}'.format(target, output))
+            assert len(output) == count, msg
+            prometheus_api.check_metric_values(q, 1)
+
+        service_dict = {
+            'telegraf': 'I@telegraf:agent or I@telegraf:remote_agent',
+            'fluentd': 'I@fluentd:agent',
+            'prometheus_lts': 'I@prometheus:relay',
+            'prometheus_relay': 'I@prometheus:relay',
+            'libvirt_qemu_exporter': 'I@prometheus:exporters:libvirt',
+            'jmx_cassandra_exporter': 'I@prometheus:exporters:jmx'
+        }
+        for service, tgt in service_dict.items():
+            nodes = salt_actions.ping(tgt, short=True)
+            for node in nodes:
+                q = ('up{{host="{}",job="{}"}}'.format(node, service))
+                output = prometheus_api.get_query(q)
+                logger.info("Waiting to get metric {}".format(q))
+                msg = "Metric {} not found".format(q)
+                assert len(output) != 0, msg
+                prometheus_api.check_metric_values(q, 1)

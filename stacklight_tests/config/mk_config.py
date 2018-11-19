@@ -159,8 +159,9 @@ class MKConfig(object):
         _param = self.get_application_node("galera")['parameters']['_param']
         return {
             "mysql_user": _param.get('mysql_admin_user', 'root'),
-            "mysql_password": _param.get('mysql_admin_password', False) or
-                              _param.get('galera_server_admin_password_generated', False)
+            "mysql_password":
+                _param.get('mysql_admin_password', False) or
+                _param.get('galera_server_admin_password_generated', False)
         }
 
     def generate_prometheus_config(self):
