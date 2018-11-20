@@ -205,3 +205,15 @@ class TestMetrics(object):
                 msg = "Metric {} not found".format(q)
                 assert len(output) != 0, msg
                 prometheus_api.check_metric_values(q, 1)
+
+    def test_up_metrics(self, prometheus_api):
+        q = '{__name__=~".*_up"}'
+        metrics = prometheus_api.get_query(q)
+        for metric in metrics:
+            msg = 'Metric {} has value {}'.format(
+                metric['metric']['__name__'], metric['value'])
+            if metric.get('metric').get('host', ''):
+                msg = msg + ' on the node {}'.format(metric['metric']['host'])
+            logger.info(msg)
+            err_msg = 'Incorrect value in metric {}'.format(metric)
+            assert '1' in metric['value'], err_msg
