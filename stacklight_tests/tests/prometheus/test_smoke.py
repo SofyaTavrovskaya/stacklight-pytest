@@ -1,5 +1,10 @@
+import logging
 import pytest
 import socket
+
+from stacklight_tests.clients.prometheus.prometheus_client import PrometheusClient  # noqa
+
+logger = logging.getLogger(__name__)
 
 
 class TestPrometheusSmoke(object):
@@ -32,6 +37,42 @@ class TestPrometheusSmoke(object):
         outputs = [salt_actions.run_cmd(hosts[0], cmd.format(b, port))[0]
                    for b in backends]
         assert len(set(outputs)) == 1
+
+    def test_prometheus_lts(self, prometheus_api, salt_actions):
+        host = salt_actions.ping("I@prometheus:relay")[0]
+        if not host:
+            pytest.skip("Prometheus LTS is not used in the cluster")
+        address = salt_actions.get_pillar_item(
+            host, '_param:single_address')[0]
+        port = salt_actions.get_pillar_item(
+            host, "prometheus:server:bind:port")[0]
+        prometheus_lts = PrometheusClient(
+            "http://{0}:{1}/".format(address, port))
+
+        logger.info("Checking that target for Prometheus LTS is up")
+        q = 'up{job="prometheus_federation"}'
+        output = prometheus_lts.get_query(q)
+        logger.info('Got {} metrics for {} query'.format(output, q))
+        msg = 'There are no metrics for query'.format(q)
+        assert len(output), msg
+        logger.info("Check value '1' for metrics {}".format(q))
+        msg = 'Incorrect value in metric {}'
+        for metric in output:
+            assert '1' in metric['value'], msg.format(metric)
+
+        logger.info("Comparing lists of measurements in Prometheus long term "
+                    "storage and short term storage")
+        sts_meas = prometheus_api.get_all_measurements()
+        lts_meas = prometheus_lts.get_all_measurements()
+        msg = (
+            "Measurements in Prometheus short term storage "
+            "and NOT in long term storage: {0}\n"
+            "Measurements in Prometheus long term storage "
+            "and NOT in short term storage: {1}".format(
+                sts_meas.difference(lts_meas),
+                lts_meas.difference(sts_meas))
+        )
+        assert sts_meas == lts_meas, msg
 
 
 class TestAlertmanagerSmoke(object):
