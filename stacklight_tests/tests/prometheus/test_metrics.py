@@ -158,12 +158,26 @@ class TestMetrics(object):
             'alertmanager': ['monitoring', 'alertmanager'],
             'prometheus': ['monitoring', 'server'],
             'remote_agent': ['monitoring', 'remote_agent'],
-            'remote_agent_openstack': ['monitoring', 'remote_agent'],
             'pushgateway': ['monitoring', 'pushgateway'],
             'grafana': ['dashboard', 'grafana']
         }
+        if salt_actions.ping("I@nova:controller"):
+            mapping.update(
+                {'remote_agent_openstack': ['monitoring', 'remote_agent']})
         for service, pillar in mapping.items():
             target_dict[service] = get_replicas_count(pillar[0], pillar[1])[0]
+
+        if salt_actions.ping("I@kubernetes:pool"):
+            k8s_map = {
+                'kubernetes-api': 'I@kubernetes:master',
+                'kubernetes-node': 'I@kubernetes:pool',
+                'etcd': 'I@etcd:server'
+            }
+            if salt_actions.ping("I@kubernetes:master:network:calico:enabled"):
+                k8s_map.update({'calico': "I@kubernetes:pool:network:calico"})
+            for service, pillar in k8s_map.items():
+                target_dict[service] = len(salt_actions.ping(pillar))
+        # TODO(vgusev): Extend test with opencontrail targets
 
         for target, count in target_dict.items():
             q = 'up{{job="{}"}}'.format(target)
