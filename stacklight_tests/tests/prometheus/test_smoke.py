@@ -39,13 +39,13 @@ class TestPrometheusSmoke(object):
         assert len(set(outputs)) == 1
 
     def test_prometheus_lts(self, prometheus_api, salt_actions):
-        host = salt_actions.ping("I@prometheus:relay")[0]
-        if not host:
+        hosts = salt_actions.ping("I@prometheus:relay")
+        if not hosts:
             pytest.skip("Prometheus LTS is not used in the cluster")
         address = salt_actions.get_pillar_item(
-            host, '_param:single_address')[0]
+            hosts[0], '_param:single_address')[0]
         port = salt_actions.get_pillar_item(
-            host, "prometheus:server:bind:port")[0]
+            hosts[0], "prometheus:server:bind:port")[0]
         prometheus_lts = PrometheusClient(
             "http://{0}:{1}/".format(address, port))
 

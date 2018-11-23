@@ -219,8 +219,11 @@ class TestOpenstackMetrics(object):
         msg = 'There are no openstack_api_check_status metrics'
         assert len(metrics) != 0, msg
         # TODO(vgusev): Refactor test after changes in telegraf are done
+        allowed_values = ['1', '2']
+        # '2' is allowed value because some services are not present in
+        # hardcoded list in telegraf. Remove after changes in telegraf are done
         for metric in metrics:
-            logger.info("Check value '1' for service {}".format(
-                metric['metric']['name']))
+            logger.info("Check allowed values {} for service {}".format(
+                ' or '.join(allowed_values), metric['metric']['name']))
             msg = 'Incorrect value in metric {}'.format(metric)
-            assert '1' in metric['value'], msg
+            assert any(x in allowed_values for x in metric['value']), msg
