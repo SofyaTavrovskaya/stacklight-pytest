@@ -173,11 +173,12 @@ class TestMetrics(object):
                 'kubernetes-node': 'I@kubernetes:pool',
                 'etcd': 'I@etcd:server'
             }
-            if salt_actions.ping("I@kubernetes:master:network:calico:enabled"):
+            if salt_actions.ping(
+                    "I@kubernetes:master:network:calico:enabled:True"):
                 k8s_map.update({'calico': "I@kubernetes:pool:network:calico"})
             for service, pillar in k8s_map.items():
                 target_dict[service] = len(salt_actions.ping(pillar))
-        # TODO(vgusev): Extend test with opencontrail targets
+        logger.info("Got the following dict to check:\n{}".format(target_dict))
 
         for target, count in target_dict.items():
             q = 'up{{job="{}"}}'.format(target)

@@ -189,7 +189,7 @@ def get_all_grafana_dashboards_names():
     dashboards = {
         "Apache": "I@apache:server",
         "Cassandra": "I@opencontrail:database",
-        "Calico": "I@kubernetes:pool",
+        "Calico": "I@kubernetes:master:network:calico:enabled:True",
         "Cinder": "I@cinder:controller",
         "Docker": "I@docker:client",
         "Elasticsearch": "I@elasticsearch:server",

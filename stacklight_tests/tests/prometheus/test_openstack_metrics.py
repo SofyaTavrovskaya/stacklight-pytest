@@ -197,6 +197,17 @@ class TestOpenstackMetrics(object):
         # TODO(vgusev): Extend test with opencontrail services
         services = salt_actions.get_grains(
             nodes[0], 'telegraf:agent:input:http_response').values()[0].keys()
+        metrics = prometheus_api.get_query('http_response_status')
+        logger.info("http_response_status metric list:")
+        for metric in metrics:
+            logger.info(
+                "Service: {:<25} Value: {} Host: {}".format(
+                    metric['metric']['name'],
+                    metric['value'],
+                    metric['metric']['host']
+                )
+            )
+
         for service in services:
             for node in nodes:
                 host = node.split(".")[0]
@@ -214,14 +225,18 @@ class TestOpenstackMetrics(object):
         if not nodes:
             pytest.skip("Openstack is not installed in the cluster")
         metrics = prometheus_api.get_query('openstack_api_check_status')
-        logger.info("openstack_api_check_status metrics list: {}".format(
-            metrics))
+        logger.info("openstack_api_check_status metrics list:")
+        for metric in metrics:
+            logger.info("Service: {:<25} Value: {}".format(
+                metric['metric']['name'], metric['value']))
+
         msg = 'There are no openstack_api_check_status metrics'
         assert len(metrics) != 0, msg
         # TODO(vgusev): Refactor test after changes in telegraf are done
         allowed_values = ['1', '2']
         # '2' is allowed value because some services are not present in
         # hardcoded list in telegraf. Remove after changes in telegraf are done
+
         for metric in metrics:
             logger.info("Check allowed values {} for service {}".format(
                 ' or '.join(allowed_values), metric['metric']['name']))

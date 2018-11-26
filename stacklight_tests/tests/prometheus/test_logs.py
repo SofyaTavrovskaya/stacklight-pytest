@@ -13,7 +13,7 @@ fluentd_loggers = {
     "system": ("linux:system", 'systemd.systemd'),
     "zookeeper": ("opencontrail:control", 'opencontrail.zookeeper'),
     "cassandra": ("opencontrail:database", 'opencontrail.cassandra.system'),
-    "opencontrail": ("opencontrail:common", 'opencontrail.discovery')
+    "opencontrail": ("opencontrail:common", 'opencontrail.contrail-control')
 }
 
 
