@@ -27,6 +27,9 @@ class ElasticSearchApi(object):
             }
             })
 
+    def search(self, index='log-*', body={}):
+        return self.es.search(index=index, body=body)
+
     def check_notifications(self, expected_notifications,
                             index_type="notification", timeout=5 * 60,
                             interval=10, **kwargs):
@@ -56,13 +59,12 @@ class ElasticSearchApi(object):
         return {program for program in program_group
                 if not self.log_is_presented(program, **kwargs)}
 
-    def return_loggers(self):
-        output = self.es.search(
-            index="log-*",
-            body={"size": "0",
-                  "aggs": {
-                      "uniq_logger": {
-                          "terms": {"field": "Logger.keyword", "size": 500}}}})
+    def list_loggers(self):
+        q = {"size": "0",
+             "aggs": {
+                 "uniq_logger": {
+                     "terms": {"field": "Logger.keyword", "size": 500}}}}
+        output = self.search(body=q)
         return [log["key"] for log in
                 output["aggregations"]["uniq_logger"]["buckets"]]
 
