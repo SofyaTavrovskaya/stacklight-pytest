@@ -191,12 +191,8 @@ class TestOpenstackMetrics(object):
                     0, err_service_msg.format(service, compute))
 
     def test_http_response_metrics(self, prometheus_api, salt_actions):
-        nodes = salt_actions.ping("I@nova:controller")
-        if not nodes:
-            pytest.skip("Openstack is not installed in the cluster")
-        # TODO(vgusev): Extend test with opencontrail services
-        services = salt_actions.get_grains(
-            nodes[0], 'telegraf:agent:input:http_response').values()[0].keys()
+        grain = 'telegraf:agent:input:http_response'
+        nodes = salt_actions.ping(grain, tgt_type='grain')
         metrics = prometheus_api.get_query('http_response_status')
         logger.info("http_response_status metric list:")
         for metric in metrics:
@@ -208,9 +204,16 @@ class TestOpenstackMetrics(object):
                 )
             )
 
-        for service in services:
-            for node in nodes:
-                host = node.split(".")[0]
+        target_dict = {}
+        for node in nodes:
+            target_dict[node] = salt_actions.get_grains(
+                node, grain).values()[0].keys()
+        logger.info("\nGot the following dict to check:\n{}\n".format(
+            target_dict))
+
+        for node in target_dict.keys():
+            host = node.split(".")[0]
+            for service in target_dict[node]:
                 q = 'http_response_status{{name="{}", host="{}"}}'.format(
                     service, host)
                 output = prometheus_api.get_query(q)
