@@ -1,6 +1,6 @@
 import logging
-
 import pytest
+import time
 
 from stacklight_tests.clients.fixtures import *  # noqa
 
@@ -20,6 +20,8 @@ def destructive(request):
         for recovery_method in recovery_actions:
             try:
                 recovery_method()
+                # Add sleep to wait the operation is completed
+                time.sleep(10)
             except Exception as e:
                 logger.error(
                     "Recovery failed: {} with exception: {}".format(

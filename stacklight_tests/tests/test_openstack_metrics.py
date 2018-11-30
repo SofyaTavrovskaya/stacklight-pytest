@@ -1,6 +1,9 @@
 import logging
 import pytest
+import re
+import time
 
+from stacklight_tests import file_cache
 from stacklight_tests import settings
 from stacklight_tests import utils
 
@@ -252,3 +255,91 @@ class TestOpenstackMetrics(object):
                 ' or '.join(allowed_values), metric['metric']['name']))
             msg = 'Incorrect value in metric {}'.format(metric)
             assert any(x in allowed_values for x in metric['value']), msg
+
+    def test_libvirt_metrics(self, prometheus_api, salt_actions, os_clients,
+                             os_actions, destructive):
+        def wait_for_metrics(inst_id):
+            def _get_current_value(q):
+                output = prometheus_api.get_query(q)
+                logger.info("Got {} libvirt metrics".format(len(output)))
+                return output
+            query = '{{__name__=~"^libvirt.*", instance_uuid="{}"}}'.format(
+                inst_id)
+            output = []
+            for i in xrange(5):
+                output = _get_current_value(query)
+                if len(output) != 0:
+                    return output
+                time.sleep(5)
+            return output
+
+        nodes = salt_actions.ping("I@nova:controller")
+        if not nodes:
+            pytest.skip("Openstack is not installed in the cluster")
+        client = os_clients.compute
+
+        logger.info("Creating a test image")
+        image = os_clients.image.images.create(
+            name="TestVM",
+            disk_format='qcow2',
+            container_format='bare')
+        with file_cache.get_file(settings.CIRROS_QCOW2_URL) as f:
+            os_clients.image.images.upload(image.id, f)
+        destructive.append(lambda: os_clients.image.images.delete(image.id))
+
+        logger.info("Creating a test flavor")
+        flavor = os_actions.create_flavor(
+            name="test_flavor", ram='64')
+        destructive.append(lambda: client.flavors.delete(flavor))
+
+        logger.info("Creating test network and subnet")
+        project_id = os_clients.auth.projects.find(name='admin').id
+        net = os_actions.create_network(project_id)
+        subnet = os_actions.create_subnet(net, project_id, "192.168.100.0/24")
+
+        logger.info("Creating a test instance")
+        server = os_actions.create_basic_server(image, flavor, net)
+        destructive.append(lambda: client.servers.delete(server))
+        destructive.append(lambda: os_clients.network.delete_subnet(
+            subnet['id']))
+        destructive.append(lambda: os_clients.network.delete_network(
+            net['id']))
+        utils.wait_for_resource_status(client.servers, server, 'ACTIVE')
+        logger.info("Created an instance with id {}".format(server.id))
+
+        logger.info("Checking libvirt metrics for the instance")
+        metrics = wait_for_metrics(server.id)
+        metric_names = list(set([m['metric']['__name__'] for m in metrics]))
+        logger.info("Got the following list of libvirt metrics: \n{}".format(
+            metric_names))
+
+        regexes = ['libvirt_domain_block_stats_read*',
+                   'libvirt_domain_block_stats_write*',
+                   'libvirt_domain_interface_stats_receive*',
+                   'libvirt_domain_interface_stats_transmit*',
+                   'libvirt_domain_info*']
+        for regex in regexes:
+            regex = re.compile(r'{}'.format(regex))
+            logger.info("Check metrics with mask {}".format(regex.pattern))
+            found = filter(regex.search, metric_names)
+            logger.info("Found {} metrics for mask {}".format(
+                found, regex.pattern))
+            msg = "Metrics with mask '{}' not found in list {}".format(
+                regex.pattern, metric_names)
+            assert found, msg
+
+        logger.info("Removing the test instance")
+        client.servers.delete(server)
+        utils.wait(
+            lambda: (server.id not in [s.id for s in client.servers.list()])
+        )
+
+        logger.info("Removing the test network and subnet")
+        os_clients.network.delete_subnet(subnet['id'])
+        os_clients.network.delete_network(net['id'])
+
+        logger.info("Removing the test image")
+        os_clients.image.images.delete(image.id)
+
+        logger.info("Removing the test flavor")
+        client.flavors.delete(flavor)
