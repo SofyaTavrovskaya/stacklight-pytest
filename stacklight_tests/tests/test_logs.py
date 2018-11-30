@@ -7,23 +7,24 @@ logger = logging.getLogger(__name__)
 
 
 fluentd_loggers = {
-    "haproxy": ("haproxy:proxy", 'haproxy.general'),
-    "neutron": ("neutron:server", 'openstack.neutron'),
-    "glance": ("glance:server", 'openstack.glance'),
-    "keystone": ("keystone:server", 'openstack.keystone'),
-    "heat": ("heat:server", 'openstack.heat'),
-    "cinder": ("cinder:controller", 'openstack.cinder'),
-    "nova": ("nova:controller", 'openstack.nova'),
-    "rabbitmq": ("rabbitmq:cluster", 'rabbitmq'),
-    "system": ("linux:system", 'systemd.systemd'),
-    "zookeeper": ("opencontrail:control", 'opencontrail.zookeeper'),
-    "cassandra": ("opencontrail:database", 'opencontrail.cassandra.*'),
-    "opencontrail": ("opencontrail:common", 'opencontrail.contrail-*'),
-    "elasticsearch": ("elasticsearch:server", 'elasticsearch.*'),
-    "kibana": ("kibana:server", 'kibana.*'),
-    "nginx": ("nginx:server", 'nginx.*'),
-    "glusterfs": ("glusterfs:server", 'glusterfs.*'),
-    "mysql": ("galera:master", "mysql.*")
+    "haproxy": ("I@haproxy:proxy", 'haproxy.general'),
+    "neutron": ("I@neutron:server", 'openstack.neutron'),
+    "glance": ("I@glance:server", 'openstack.glance'),
+    "keystone": ("I@keystone:server", 'openstack.keystone'),
+    "heat": ("I@heat:server", 'openstack.heat'),
+    "cinder": ("I@cinder:controller", 'openstack.cinder'),
+    "nova": ("I@nova:controller", 'openstack.nova'),
+    "rabbitmq": ("I@rabbitmq:cluster", 'rabbitmq'),
+    "system": ("I@linux:system", 'systemd.systemd'),
+    "zookeeper": ("I@opencontrail:control", 'opencontrail.zookeeper'),
+    "cassandra": ("I@opencontrail:database", 'opencontrail.cassandra.*'),
+    "opencontrail": ("I@opencontrail:common", 'opencontrail.contrail-*'),
+    "elasticsearch": ("I@elasticsearch:server", 'elasticsearch.*'),
+    "nginx": ("I@nginx:server", 'nginx.*'),
+    "glusterfs": ("I@glusterfs:server", 'glusterfs.*'),
+    "kubernetes": ("I@kubernetes:pool", "kubernetes.*"),
+    "calico": ("I@kubernetes:master:network:calico:enabled:True",
+               "kubernetes.calico.*")
 }
 
 
@@ -34,9 +35,9 @@ fluentd_loggers = {
 @pytest.mark.run(order=-1)
 def test_fluentd_logs(es_client, salt_actions, input_data):
     pillar, es_logger = input_data
-    if not salt_actions.ping("fluentd:agent", tgt_type="pillar"):
+    if not salt_actions.ping("I@fluentd:agent"):
         pytest.skip("Fluentd is not installed in the cluster")
-    if not salt_actions.ping(pillar, tgt_type="pillar"):
+    if not salt_actions.ping(pillar):
         pytest.skip("No required nodes with pillar {}".format(pillar))
 
     logger_list = es_client.list_loggers()
