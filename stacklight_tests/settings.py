@@ -18,4 +18,4 @@ CIRROS_QCOW2_URL = os.environ.get(
 CONFIGURE_APPS = ["nodes", "influxdb", "elasticsearch", "grafana",
                   "keystone", "mysql", "prometheus", "alerta", "mongodb"]
 
-VOLUME_STATUS = os.environ.get("VOLUME_STATUS", "error")
+VOLUME_STATUS = os.environ.get("VOLUME_STATUS", "available")

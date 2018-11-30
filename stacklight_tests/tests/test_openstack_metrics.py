@@ -12,16 +12,19 @@ class TestOpenstackMetrics(object):
     def test_glance_metrics(self, destructive, prometheus_api, os_clients):
         image_name = utils.rand_name("image-")
         client = os_clients.image
+
+        logger.info("Creating a test image")
         image = client.images.create(
             name=image_name,
             container_format="bare",
             disk_format="raw",
             visibility="public")
         client.images.upload(image.id, "dummy_data")
-        utils.wait_for_resource_status(client.images, image.id, "active")
         destructive.append(lambda: client.images.delete(image.id))
-        filter = {"visibility": "public"}
+        utils.wait_for_resource_status(client.images, image.id, "active")
 
+        logger.info("Checking the glance metrics")
+        filter = {"visibility": "public"}
         images_count = len([im for im in client.images.list(
                             filters=filter)])
         images_size = sum([im["size"] for im in client.images.list(
@@ -40,6 +43,7 @@ class TestOpenstackMetrics(object):
         prometheus_api.check_metric_values(
             size_query, images_size, error_size_msg)
 
+        logger.info("Removing the test image")
         client.images.delete(image.id)
         utils.wait(
             lambda: (image.id not in [i["id"] for i in client.images.list()])
@@ -120,12 +124,15 @@ class TestOpenstackMetrics(object):
         volume_name = utils.rand_name("volume-")
         expected_volume_status = settings.VOLUME_STATUS
         client = os_clients.volume
+
+        logger.info("Creating a test volume")
         volume = client.volumes.create(size=1, name=volume_name)
+        destructive.append(lambda: client.volumes.delete(volume))
         utils.wait_for_resource_status(client.volumes, volume.id,
                                        expected_volume_status)
-        destructive.append(lambda: client.volume.delete(volume))
-        filter = {'status': expected_volume_status, 'all_tenants': 1}
 
+        logger.info("Checking the cinder metrics")
+        filter = {'status': expected_volume_status, 'all_tenants': 1}
         volumes_count = len([vol for vol in client.volumes.list(
                              search_opts=filter)])
         volumes_size = sum([vol.size for vol in client.volumes.list(
@@ -145,6 +152,7 @@ class TestOpenstackMetrics(object):
         prometheus_api.check_metric_values(
             size_query, volumes_size, error_size_msg)
 
+        logger.info("Removing the test volume")
         client.volumes.delete(volume)
         utils.wait(
             lambda: (volume.id not in [v.id for v in client.volumes.list()])
