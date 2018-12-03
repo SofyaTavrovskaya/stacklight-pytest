@@ -90,8 +90,8 @@ class TestMetrics(object):
             msg = "Metric {} not found".format(metric)
             assert len(output) != 0, msg
 
-    def test_mysql_metrics(self, salt_actions):
-        mysql_hosts = salt_actions.ping("services:galera", tgt_type="grain")
+    def test_mysql_metrics(self, salt_actions, prometheus_api):
+        mysql_hosts = salt_actions.ping("I@galera:*")
         expected_metrics = [
             'mysql_wsrep_connected', 'mysql_wsrep_local_cert_failures',
             'mysql_wsrep_local_commits', 'mysql_wsrep_local_send_queue',
@@ -130,15 +130,13 @@ class TestMetrics(object):
             expected_metrics.append("mysql_handler_{}".format(handler))
 
         for host in mysql_hosts:
-            cmd = "curl -s localhost:9126/metrics | awk '/^mysql/{print $1}'"
-            got_metrics = salt_actions.run_cmd(host, cmd)[0].split("\n")
-            hostname = host.split(".")[0]
             for metric in expected_metrics:
-                metric = (metric + '{host="' + hostname +
-                          '",server="/var/run/mysqld/mysqld.sock"}')
-                err_msg = ("Metric {} not found in received list of mysql "
-                           "metrics on {} node".format(metric, hostname))
-                assert metric in got_metrics, err_msg
+                hostname = host.split(".")[0]
+                q = '{}{{host="{}"}}'.format(metric, hostname)
+                output = prometheus_api.get_query(q)
+                logger.info("Waiting to get metric {}".format(q))
+                msg = "Metric {} not found".format(q)
+                assert len(output) != 0, msg
 
     def test_prometheus_targets(self, salt_actions, prometheus_api):
         def get_replicas_count(stack, service):
