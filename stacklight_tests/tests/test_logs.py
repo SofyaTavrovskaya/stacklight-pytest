@@ -7,25 +7,40 @@ logger = logging.getLogger(__name__)
 
 
 fluentd_loggers = {
-    "haproxy": ("I@haproxy:proxy", 'haproxy.general'),
-    "neutron": ("I@neutron:server", 'openstack.neutron'),
-    "glance": ("I@glance:server", 'openstack.glance'),
-    "keystone": ("I@keystone:server", 'openstack.keystone'),
-    "heat": ("I@heat:server", 'openstack.heat'),
+    "calico": ("I@kubernetes:master:network:calico:enabled:True",
+               "kubernetes.calico.*"),
+    "cassandra": ("I@opencontrail:database", 'opencontrail.cassandra.*'),
     "cinder": ("I@cinder:controller", 'openstack.cinder'),
+    "elasticsearch": ("I@elasticsearch:server", 'elasticsearch.*'),
+    "glance": ("I@glance:server", 'openstack.glance'),
+    "glusterfs": ("I@glusterfs:server", 'glusterfs.*'),
+    "haproxy": ("I@haproxy:proxy", 'haproxy.general'),
+    "heat": ("I@heat:server", 'openstack.heat'),
+    "keystone": ("I@keystone:server", 'openstack.keystone'),
+    "kibana": ("I@kibana:server", 'kibana.*'),
+    "kubernetes": ("I@kubernetes:pool", "kubernetes.*"),
+    "neutron": ("I@neutron:server", 'openstack.neutron'),
+    "nginx": ("I@nginx:server", 'nginx.*'),
     "nova": ("I@nova:controller", 'openstack.nova'),
+    "opencontrail": ("I@opencontrail:common", 'opencontrail.contrail-*'),
     "rabbitmq": ("I@rabbitmq:cluster", 'rabbitmq'),
     "system": ("I@linux:system", 'systemd.systemd'),
     "zookeeper": ("I@opencontrail:control", 'opencontrail.zookeeper'),
-    "cassandra": ("I@opencontrail:database", 'opencontrail.cassandra.*'),
-    "opencontrail": ("I@opencontrail:common", 'opencontrail.contrail-*'),
-    "elasticsearch": ("I@elasticsearch:server", 'elasticsearch.*'),
-    "nginx": ("I@nginx:server", 'nginx.*'),
-    "glusterfs": ("I@glusterfs:server", 'glusterfs.*'),
-    "kubernetes": ("I@kubernetes:pool", "kubernetes.*"),
-    "calico": ("I@kubernetes:master:network:calico:enabled:True",
-               "kubernetes.calico.*")
 }
+
+
+@pytest.mark.run(order=1)
+def test_log_helper(salt_actions):
+    # Helper methods to generate logs that may not be present right after
+    # deployment
+    nginx_nodes = salt_actions.ping("I@nginx:server")
+    salt_actions.run_cmd(nginx_nodes[0], "curl http://127.0.0.1/nginx_status")
+    kibana_nodes = salt_actions.ping("I@kibana:server")
+    log_address = salt_actions.get_pillar_item(
+        kibana_nodes[0], "_param:stacklight_log_address")[0]
+    salt_actions.run_cmd(
+        kibana_nodes[0], "curl -XGET http://{}:5601/status -I".format(
+            log_address))
 
 
 @pytest.mark.smoke
