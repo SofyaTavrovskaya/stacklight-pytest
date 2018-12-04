@@ -173,6 +173,31 @@ ignored_queries_for_partial_fail = [
 
     # Values coming only from two nodes PROD-19161
     'max(elasticsearch_indices_search_fetch_latency{host="$host"}',
+
+    # K8s. We can have pods only on controllers
+    'sum(rate(kubernetes_pod_container_cpu_usage_core_nanoseconds'
+    '{host=~"^$host$"}[$rate_interval]) / 1000000000) / sum (system_n_cpus'
+    '{host=~"^$host$"}) * 100',
+    'sum(kubernetes_pod_container_memory_working_set_bytes{host=~"$host"}) '
+    'by (pod_name)',
+    'sum(kubernetes_pod_container_memory_working_set_bytes{host=~"$host"}) / '
+    '(sum(kubernetes_node_memory_available_bytes{host=~"$host"}) + '
+    'sum(kubernetes_node_memory_working_set_bytes{host=~"$host"})) * 100',
+    'sum(kubernetes_pod_container_memory_working_set_bytes{host=~"$host"})',
+    'sum(rate(kubernetes_pod_network_rx_bytes{host=~"^$host$"}'
+    '[$rate_interval])) by (pod_name)',
+    'sum(rate(kubernetes_pod_network_tx_bytes{host=~"^$host$"}'
+    '[$rate_interval])) by (pod_name)',
+    'sum(rate(kubernetes_pod_container_cpu_usage_core_nanoseconds'
+    '{host=~"^$host$"}[$rate_interval]) / 1000000000)  ',
+    'sum(rate(kubernetes_pod_container_cpu_usage_core_nanoseconds'
+    '{host=~"^$host$"}[$rate_interval])) by (pod_name) / 1000000000',
+    'kubernetes_pod_volume_available_bytes{host=~"^$host$"}',
+    'sum(rate(kubernetes_pod_container_cpu_usage_core_nanoseconds'
+    '{host=~"^$host$"}[$rate_interval]) / 1000000000)',
+    'sum(kubernetes_pod_volume_used_bytes{host=~"^$host$",'
+    'volume_name=~"^$volume$"})',
+    'kubernetes_pod_container_rootfs_used_bytes{host=~"^$host$"}',
 ]
 
 
