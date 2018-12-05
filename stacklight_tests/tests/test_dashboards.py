@@ -195,8 +195,7 @@ ignored_queries_for_partial_fail = [
     'kubernetes_pod_volume_available_bytes{host=~"^$host$"}',
     'sum(rate(kubernetes_pod_container_cpu_usage_core_nanoseconds'
     '{host=~"^$host$"}[$rate_interval]) / 1000000000)',
-    'sum(kubernetes_pod_volume_used_bytes{host=~"^$host$",'
-    'volume_name=~"^$volume$"})',
+    'kubernetes_pod_volume_used_bytes{host=~"^$host$"}',
     'kubernetes_pod_container_rootfs_used_bytes{host=~"^$host$"}',
 ]
 
