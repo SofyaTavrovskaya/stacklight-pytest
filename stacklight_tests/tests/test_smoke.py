@@ -2,6 +2,7 @@ import logging
 import pytest
 import socket
 
+from stacklight_tests import utils
 from stacklight_tests.clients.prometheus.prometheus_client import PrometheusClient  # noqa
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,21 @@ class TestPrometheusSmoke(object):
         assert len(set(outputs)) == 1
 
     def test_prometheus_lts(self, prometheus_api, salt_actions):
+        def compare_meas(sts_api, lts_api):
+            sts_meas = sts_api.get_all_measurements()
+            lts_meas = lts_api.get_all_measurements()
+            if sts_meas == lts_meas:
+                return True
+            else:
+                logger.info(
+                    "Measurements in Prometheus short term storage "
+                    "and NOT in long term storage: {0}\n"
+                    "Measurements in Prometheus long term storage "
+                    "and NOT in short term storage: {1}".format(
+                        sts_meas.difference(lts_meas),
+                        lts_meas.difference(sts_meas)))
+                return False
+
         hosts = salt_actions.ping("I@prometheus:relay")
         if not hosts:
             pytest.skip("Prometheus LTS is not used in the cluster")
@@ -62,17 +78,10 @@ class TestPrometheusSmoke(object):
 
         logger.info("Comparing lists of measurements in Prometheus long term "
                     "storage and short term storage")
-        sts_meas = prometheus_api.get_all_measurements()
-        lts_meas = prometheus_lts.get_all_measurements()
-        msg = (
-            "Measurements in Prometheus short term storage "
-            "and NOT in long term storage: {0}\n"
-            "Measurements in Prometheus long term storage "
-            "and NOT in short term storage: {1}".format(
-                sts_meas.difference(lts_meas),
-                lts_meas.difference(sts_meas))
-        )
-        assert sts_meas == lts_meas, msg
+        timeout_msg = "Measurements in Prometheus STS and LTS inconsistent"
+        utils.wait(lambda: compare_meas(prometheus_api, prometheus_lts),
+                   interval=30, timeout=2 * 60,
+                   timeout_msg=timeout_msg)
 
 
 class TestAlertmanagerSmoke(object):
