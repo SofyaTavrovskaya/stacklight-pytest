@@ -33,16 +33,18 @@ fluentd_loggers = {
 def test_log_helper(salt_actions):
     # Helper methods to generate logs that may not be present right after
     # deployment
-    nginx_nodes = salt_actions.ping("I@nginx:server")
-    salt_actions.run_cmd(nginx_nodes[0], "curl http://127.0.0.1/nginx_status")
-    salt_actions.run_cmd(
-        nginx_nodes[0], "curl http://127.0.0.1:15010/nginx_status")
     kibana_nodes = salt_actions.ping("I@kibana:server")
     log_address = salt_actions.get_pillar_item(
         kibana_nodes[0], "_param:stacklight_log_address")[0]
     salt_actions.run_cmd(
         kibana_nodes[0], "curl -XGET http://{}:5601/status -I".format(
             log_address))
+    nginx_nodes = salt_actions.ping("I@nginx:server")
+    if nginx_nodes:
+        salt_actions.run_cmd(
+            nginx_nodes[0], "curl http://127.0.0.1/nginx_status")
+        salt_actions.run_cmd(
+            nginx_nodes[0], "curl http://127.0.0.1:15010/nginx_status")
 
 
 @pytest.mark.smoke
