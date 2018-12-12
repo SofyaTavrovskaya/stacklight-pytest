@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestOpenstackMetrics(object):
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_glance_metrics(self, destructive, prometheus_api, os_clients):
         image_name = utils.rand_name("image-")
         client = os_clients.image
@@ -52,7 +52,7 @@ class TestOpenstackMetrics(object):
             lambda: (image.id not in [i["id"] for i in client.images.list()])
         )
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_keystone_metrics(self, prometheus_api, os_clients):
         client = os_clients.auth
         tenants = client.projects.list()
@@ -91,7 +91,7 @@ class TestOpenstackMetrics(object):
                 metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_neutron_metrics(self, prometheus_api, os_clients):
         client = os_clients.network
 
@@ -122,7 +122,7 @@ class TestOpenstackMetrics(object):
                 metric, metric_dict[metric][0],
                 metric_dict[metric][1].format(metric))
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_cinder_metrics(self, destructive, prometheus_api, os_clients):
         volume_name = utils.rand_name("volume-")
         expected_volume_status = settings.VOLUME_STATUS
@@ -161,7 +161,7 @@ class TestOpenstackMetrics(object):
             lambda: (volume.id not in [v.id for v in client.volumes.list()])
         )
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_nova_telegraf_metrics(self, prometheus_api, os_clients):
         client = os_clients.compute
 
@@ -176,7 +176,7 @@ class TestOpenstackMetrics(object):
             prometheus_api.check_metric_values(
                 q, get_servers_count(status.upper()), err_msg.format(q))
 
-    @pytest.mark.run(order=1)
+    @pytest.mark.run(order=2)
     def test_nova_services_metrics(self, prometheus_api, salt_actions):
         controllers = salt_actions.ping(
             "nova:controller:enabled:True", tgt_type="pillar", short=True)
@@ -200,6 +200,7 @@ class TestOpenstackMetrics(object):
                     'openstack_nova_service{' + q + '}',
                     0, err_service_msg.format(service, compute))
 
+    @pytest.mark.run(order=2)
     def test_http_response_metrics(self, prometheus_api, salt_actions):
         grain = 'telegraf:agent:input:http_response'
         nodes = salt_actions.ping(grain, tgt_type='grain')
@@ -232,6 +233,7 @@ class TestOpenstackMetrics(object):
                 assert len(output) != 0, msg
                 prometheus_api.check_metric_values(q, 1)
 
+    @pytest.mark.run(order=1)
     def test_openstack_api_check_status_metrics(self, prometheus_api,
                                                 salt_actions):
         nodes = salt_actions.ping("I@nova:controller")
@@ -256,6 +258,7 @@ class TestOpenstackMetrics(object):
             msg = 'Incorrect value in metric {}'.format(metric)
             assert any(x in allowed_values for x in metric['value']), msg
 
+    @pytest.mark.run(order=2)
     def test_libvirt_metrics(self, prometheus_api, salt_actions, os_clients,
                              os_actions, destructive):
         def wait_for_metrics(inst_id):

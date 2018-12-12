@@ -32,6 +32,7 @@ class TestMetrics(object):
                    'kernel_interrupts', 'kernel_processes_forked']
     }
 
+    @pytest.mark.run(order=2)
     def test_etcd_metrics(self, salt_actions, prometheus_api):
         nodes = salt_actions.ping("services:etcd", tgt_type="grain")
         if not nodes:
@@ -45,16 +46,19 @@ class TestMetrics(object):
                      for metric in metrics]
         assert set(expected_hostnames) == set(hostnames)
 
+    @pytest.mark.run(order=1)
     def test_telegraf_metrics(self, prometheus_api, salt_actions):
         expected_hostnames = salt_actions.ping(short=True)
         metrics = prometheus_api.get_query("system_uptime")
         hostnames = [metric["metric"]["host"] for metric in metrics]
         assert set(expected_hostnames) == set(hostnames)
 
+    @pytest.mark.run(order=1)
     def test_prometheus_metrics(self, prometheus_api):
         metric = prometheus_api.get_query("prometheus_build_info")
         assert len(metric) != 0
 
+    @pytest.mark.run(order=1)
     @pytest.mark.parametrize("target,metrics", target_metrics.items(),
                              ids=target_metrics.keys())
     def test_system_metrics(self, prometheus_api, salt_actions,
@@ -71,6 +75,7 @@ class TestMetrics(object):
                 output = prometheus_api.get_query(q)
                 assert len(output) != 0, msg
 
+    @pytest.mark.run(order=2)
     def test_k8s_metrics(self, salt_actions, prometheus_api):
         nodes = salt_actions.ping("services:kubernetes", tgt_type="grain")
 
@@ -90,6 +95,7 @@ class TestMetrics(object):
             msg = "Metric {} not found".format(metric)
             assert len(output) != 0, msg
 
+    @pytest.mark.run(order=2)
     def test_mysql_metrics(self, salt_actions, prometheus_api):
         mysql_hosts = salt_actions.ping("I@galera:*")
         expected_metrics = [
@@ -138,6 +144,7 @@ class TestMetrics(object):
                 msg = "Metric {} not found".format(q)
                 assert len(output) != 0, msg
 
+    @pytest.mark.run(order=1)
     def test_prometheus_targets(self, salt_actions, prometheus_api):
         def get_replicas_count(stack, service):
             tgt = "I@docker:swarm and I@prometheus:server"
@@ -205,6 +212,7 @@ class TestMetrics(object):
                 assert len(output) != 0, msg
                 prometheus_api.check_metric_values(q, 1)
 
+    @pytest.mark.run(order=1)
     def test_up_metrics(self, prometheus_api):
         q = '{__name__=~".*_up"}'
         metrics = prometheus_api.get_query(q)

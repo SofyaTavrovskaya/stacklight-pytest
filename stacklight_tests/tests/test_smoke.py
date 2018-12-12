@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestPrometheusSmoke(object):
+    @pytest.mark.run(order=1)
     def test_prometheus_container(self, salt_actions):
         prometheus_nodes = salt_actions.ping(
             "prometheus:alertmanager", tgt_type="pillar")
@@ -23,9 +24,11 @@ class TestPrometheusSmoke(object):
         assert any([test_prometheus_container_up(node)
                     for node in prometheus_nodes])
 
+    @pytest.mark.run(order=1)
     def test_prometheus_datasource(self, prometheus_api):
         assert prometheus_api.get_all_measurements()
 
+    @pytest.mark.run(order=1)
     def test_prometheus_relay(self, salt_actions):
         hosts = salt_actions.ping("I@prometheus:relay")
         if not hosts:
@@ -39,6 +42,7 @@ class TestPrometheusSmoke(object):
                    for b in backends]
         assert len(set(outputs)) == 1
 
+    @pytest.mark.run(order=1)
     def test_prometheus_lts(self, prometheus_api, salt_actions):
         def compare_meas(sts_api, lts_api):
             sts_meas = sts_api.get_all_measurements()
@@ -85,6 +89,7 @@ class TestPrometheusSmoke(object):
 
 
 class TestAlertmanagerSmoke(object):
+    @pytest.mark.run(order=1)
     def test_alertmanager_endpoint_availability(self, prometheus_config):
         """Check that alertmanager endpoint is available.
 
@@ -104,6 +109,7 @@ class TestAlertmanagerSmoke(object):
             result = False
         assert result
 
+    @pytest.mark.run(order=1)
     def test_alertmanager_ha(self, salt_actions, prometheus_config):
         """Check alertmanager HA .
 
