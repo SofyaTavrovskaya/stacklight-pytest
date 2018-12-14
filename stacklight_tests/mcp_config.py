@@ -35,6 +35,7 @@ class MKConfig(object):
         inventory = yaml.load(file_like_io)
 
         LOG.info("Try to load nodes for domain {}".format(cluster_name))
+        LOG.info("Logging config: {}".format(str(inventory)))
         if "skipped_nodes" in os.environ:
             skipped_nodes = os.environ['skipped_nodes']
             self.nodes = {k: v for k, v in inventory["nodes"].items()
