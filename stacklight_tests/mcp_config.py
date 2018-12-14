@@ -30,7 +30,7 @@ class MKConfig(object):
         salt = salt_api.SaltApi()
         inv = salt.salt_api.cmd(
             'salt:master', 'cmd.run', ['reclass --inventory'],
-            expr_form='pillar').values()
+            tgt_type='pillar').values()
         file_like_io = StringIO(''.join(inv).decode("utf-8"))
         inventory = yaml.load(file_like_io)
 
